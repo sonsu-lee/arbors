@@ -1,0 +1,40 @@
+import type { Messages } from "./en.js";
+
+export const ja: Messages = {
+  selectProject: "プロジェクトを選択してください:",
+  noProjects: "登録されたプロジェクトがありません。gitリポジトリでarborを先に実行してください。",
+  recentProjects: "最近のプロジェクト",
+
+  selectWorktree: "ワークツリーを選択してください:",
+  noWorktrees: "ワークツリーがありません。",
+  createNew: "新しいワークツリーを作成",
+
+  creating: "ワークツリーを作成中...",
+  removing: "ワークツリーを削除中...",
+  copying: "除外ファイルをコピー中...",
+  installing: "依存関係をインストール中...",
+
+  created: "ワークツリーを作成しました",
+  removed: "ワークツリーを削除しました",
+  copied: "除外ファイルをコピーしました",
+  installed: "依存関係をインストールしました",
+  resultsFound: (count: number) => `${count}件の結果`,
+
+  notGitRepo: "gitリポジトリではありません。",
+  worktreeExists: "ワークツリーはすでに存在します。",
+  worktreeNotFound: "ワークツリーが見つかりません。",
+  uncommittedChanges: "コミットされていない変更があります。コミットまたはスタッシュしてください。",
+  cannotDeleteMain: "メインワークツリーは削除できません。",
+  invalidName: "無効なワークツリー名です。",
+
+  helpFooter: "Tab: 補完 | Enter: 選択 | Esc: キャンセル",
+  helpWorktree: "Ctrl+B: 新ブランチ | Ctrl+X: 削除 | Esc: 戻る",
+
+  configSaved: "設定を保存しました。",
+  configCurrent: "現在の設定:",
+
+  version: "arbor v0.1.0",
+  usage: "使い方: arbor [コマンド] [オプション]",
+  commands: "コマンド:",
+  options: "オプション:",
+} as const;
