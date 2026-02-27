@@ -1,0 +1,53 @@
+{
+  "name": "arbor",
+  "version": "0.1.0",
+  "description": "Interactive git worktree manager with TUI",
+  "keywords": [
+    "cli",
+    "git",
+    "tui",
+    "worktree"
+  ],
+  "license": "MIT",
+  "bin": {
+    "arbor": "./dist/arbor.js"
+  },
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "oxlint .",
+    "format": "oxfmt .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "fuse.js": "^7.1.0",
+    "ink": "^6.8.0",
+    "react": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "@types/react": "^19.2.14",
+    "happy-dom": "^20.7.0",
+    "oxfmt": "^0.35.0",
+    "oxlint": "^1.50.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@10.29.3",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

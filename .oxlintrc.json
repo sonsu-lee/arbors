@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "rules": {
+    "eslint/no-unused-vars": "warn",
+    "eslint/no-console": "off",
+    "eslint/eqeqeq": "error"
+  },
+  "ignorePatterns": ["dist", "node_modules"]
+}
