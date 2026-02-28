@@ -18,6 +18,31 @@ A git worktree manager. Fuzzy-search your projects, create and switch worktrees,
 ## Install
 
 ```sh
+git clone git@github.com:<your-username>/arbor.git
+cd arbor
+pnpm install
+pnpm build
+```
+
+### Global access
+
+Option A: npm link
+
+```sh
+npm link
+```
+
+Option B: shell alias (no link needed)
+
+```sh
+# ~/.zshrc or ~/.bashrc
+alias arbor="node ~/path/to/arbor/dist/arbor.js"
+```
+
+### Update
+
+```sh
+git pull
 pnpm install
 pnpm build
 ```
