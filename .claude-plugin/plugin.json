@@ -1,0 +1,7 @@
+{
+  "name": "arbor",
+  "version": "0.1.0",
+  "description": "Git worktree manager with interactive TUI and CLI",
+  "repository": "https://github.com/sungsulee/arbor",
+  "license": "MIT"
+}
