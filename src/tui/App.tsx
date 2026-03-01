@@ -16,17 +16,18 @@ interface AppProps {
   adapter: RuntimeAdapter;
   messages: Messages;
   projects: ProjectEntry[];
-  listWorktrees: (adapter: RuntimeAdapter) => Promise<WorktreeInfo[]>;
+  branchPrefix: string;
+  listWorktrees: (adapter: RuntimeAdapter, branchPrefix: string) => Promise<WorktreeInfo[]>;
 }
 
-export const App: React.FC<AppProps> = ({ adapter, messages, projects, listWorktrees }) => {
+export const App: React.FC<AppProps> = ({ adapter, messages, projects, branchPrefix, listWorktrees }) => {
   const { exit } = useApp();
   const [state, setState] = useState<AppState>({ phase: "project", projects });
 
   const handleProjectSelect = async (project: ProjectEntry) => {
-    const worktrees = await listWorktrees(adapter);
-    const arborWorktrees = worktrees.filter((wt) => wt.branch.startsWith("arbor/"));
-    setState({ phase: "worktree", project, worktrees: arborWorktrees });
+    const worktrees = await listWorktrees(adapter, branchPrefix);
+    const managedWorktrees = worktrees.filter((wt) => wt.branch.startsWith(`${branchPrefix}/`));
+    setState({ phase: "worktree", project, worktrees: managedWorktrees });
   };
 
   const handleWorktreeSelect = (worktree: WorktreeInfo) => {
@@ -70,6 +71,7 @@ export const App: React.FC<AppProps> = ({ adapter, messages, projects, listWorkt
     return (
       <WorktreeSelector
         worktrees={state.worktrees}
+        branchPrefix={branchPrefix}
         onSelect={handleWorktreeSelect}
         onCreate={handleWorktreeCreate}
         onDelete={handleWorktreeDelete}

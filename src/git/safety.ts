@@ -18,8 +18,9 @@ export const hasUncommittedChanges = async (
 export const isMainWorktree = async (
   adapter: RuntimeAdapter,
   worktreePath: string,
+  branchPrefix: string,
 ): Promise<boolean> => {
-  const worktrees = await listWorktrees(adapter);
+  const worktrees = await listWorktrees(adapter, branchPrefix);
   const target = worktrees.find((wt) => wt.path === worktreePath);
   return target?.isMain ?? false;
 };
@@ -27,8 +28,9 @@ export const isMainWorktree = async (
 export const canSafelyRemove = async (
   adapter: RuntimeAdapter,
   worktreePath: string,
+  branchPrefix: string,
 ): Promise<{ safe: boolean; reason?: string }> => {
-  if (await isMainWorktree(adapter, worktreePath)) {
+  if (await isMainWorktree(adapter, worktreePath, branchPrefix)) {
     return { safe: false, reason: "cannotDeleteMain" };
   }
 

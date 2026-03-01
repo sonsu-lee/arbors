@@ -88,7 +88,7 @@ const main = async () => {
       }
 
       console.log(msg.creating);
-      const worktreePath = await createWorktree(adapter, name, flags.base);
+      const worktreePath = await createWorktree(adapter, name, config.branchPrefix, flags.base);
 
       if (config.copyExcludes) {
         console.log(msg.copying);
@@ -119,7 +119,7 @@ const main = async () => {
       const { basename, dirname, resolve } = await import("node:path");
       const worktreePath = resolve(dirname(repoRoot), `${basename(repoRoot)}-arbor`, name);
 
-      const { safe, reason } = await canSafelyRemove(adapter, worktreePath);
+      const { safe, reason } = await canSafelyRemove(adapter, worktreePath, config.branchPrefix);
       if (!safe) {
         const errorMsg = reason ? msg[reason as keyof typeof msg] : "Cannot remove";
         console.error(`✗ ${errorMsg}`);
@@ -128,22 +128,22 @@ const main = async () => {
       }
 
       console.log(msg.removing);
-      await removeWorktree(adapter, name);
+      await removeWorktree(adapter, name, config.branchPrefix);
       console.log(`✓ ${msg.removed}: ${name}`);
       break;
     }
 
     case "list": {
-      const worktrees = await listWorktrees(adapter);
-      const arborWorktrees = worktrees.filter((wt) => wt.branch.startsWith("arbor/"));
+      const worktrees = await listWorktrees(adapter, config.branchPrefix);
+      const managedWorktrees = worktrees.filter((wt) => wt.branch.startsWith(`${config.branchPrefix}/`));
 
       if (flags.plain) {
-        arborWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
-      } else if (arborWorktrees.length === 0) {
+        managedWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
+      } else if (managedWorktrees.length === 0) {
         console.log(msg.noWorktrees);
       } else {
-        arborWorktrees.forEach((wt) => {
-          console.log(`  ${wt.branch.replace("arbor/", "")} → ${wt.path}`);
+        managedWorktrees.forEach((wt) => {
+          console.log(`  ${wt.branch.replace(`${config.branchPrefix}/`, "")} → ${wt.path}`);
         });
       }
       break;

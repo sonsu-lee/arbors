@@ -29,7 +29,7 @@ export const getDefaultBranch = async (adapter: RuntimeAdapter): Promise<string>
   return mainCheck.exitCode === 0 ? "main" : "master";
 };
 
-const parseWorktreeBlock = (block: string): WorktreeInfo | null => {
+const parseWorktreeBlock = (block: string, branchPrefix: string): WorktreeInfo | null => {
   const lines = block.split("\n");
   const pathLine = lines.find((l) => l.startsWith("worktree "));
   const branchLine = lines.find((l) => l.startsWith("branch "));
@@ -38,31 +38,32 @@ const parseWorktreeBlock = (block: string): WorktreeInfo | null => {
 
   const path = pathLine.slice(9);
   const branch = branchLine?.slice(7).replace("refs/heads/", "") ?? "";
-  const isMain = !lines.some((l) => l === "detached" || l.startsWith("branch refs/heads/arbor/"));
+  const isMain = !lines.some((l) => l === "detached" || l.startsWith(`branch refs/heads/${branchPrefix}/`));
 
   return { path, branch, isMain };
 };
 
-export const listWorktrees = async (adapter: RuntimeAdapter): Promise<WorktreeInfo[]> => {
+export const listWorktrees = async (adapter: RuntimeAdapter, branchPrefix: string): Promise<WorktreeInfo[]> => {
   const result = await adapter.exec("git", ["worktree", "list", "--porcelain"]);
   if (result.exitCode !== 0) return [];
 
   return result.stdout
     .split("\n\n")
-    .map(parseWorktreeBlock)
+    .map((block: string) => parseWorktreeBlock(block, branchPrefix))
     .filter((wt): wt is WorktreeInfo => wt !== null);
 };
 
 export const createWorktree = async (
   adapter: RuntimeAdapter,
   name: string,
+  branchPrefix: string,
   baseBranch?: string,
 ): Promise<string> => {
   const repoName = await getRepoName(adapter);
   const repoRoot = await getRepoRoot(adapter);
   const base = baseBranch ?? (await getDefaultBranch(adapter));
   const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, name);
-  const branchName = `arbor/${name}`;
+  const branchName = `${branchPrefix}/${name}`;
 
   const result = await adapter.exec("git", [
     "worktree",
@@ -80,11 +81,11 @@ export const createWorktree = async (
   return worktreePath;
 };
 
-export const removeWorktree = async (adapter: RuntimeAdapter, name: string): Promise<void> => {
+export const removeWorktree = async (adapter: RuntimeAdapter, name: string, branchPrefix: string): Promise<void> => {
   const repoName = await getRepoName(adapter);
   const repoRoot = await getRepoRoot(adapter);
   const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, name);
-  const branchName = `arbor/${name}`;
+  const branchName = `${branchPrefix}/${name}`;
 
   const removeResult = await adapter.exec("git", ["worktree", "remove", "--force", worktreePath]);
 
