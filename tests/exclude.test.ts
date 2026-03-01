@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { getExcludePatterns, findExcludedFiles, copyExcludedFiles } from "../src/git/exclude.js";
+import { getExcludePatterns, findExcludedEntries, copyExcludedFiles } from "../src/git/exclude.js";
 import type { RuntimeAdapter } from "../src/runtime/adapter.js";
 
 const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdapter => ({
@@ -8,7 +8,7 @@ const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdap
   readFile: vi.fn(async () => ""),
   writeFile: vi.fn(),
   exists: vi.fn(async () => true),
-  copyFile: vi.fn(),
+  copy: vi.fn(),
   mkdir: vi.fn(),
   ...overrides,
 });
@@ -54,9 +54,9 @@ describe("getExcludePatterns", () => {
   });
 });
 
-describe("findExcludedFiles", () => {
+describe("findExcludedEntries", () => {
   it("should glob each pattern and deduplicate results", async () => {
-    // Given: patterns that match overlapping files
+    // Given: patterns that match overlapping entries
     const adapter = createMockAdapter({
       glob: vi.fn(async (pattern: string) => {
         if (pattern === ".env") return [".env"];
@@ -65,11 +65,11 @@ describe("findExcludedFiles", () => {
       }),
     });
 
-    // When: excluded files are found
-    const files = await findExcludedFiles(adapter, [".env", ".env*"]);
+    // When: excluded entries are found
+    const entries = await findExcludedEntries(adapter, [".env", ".env*"]);
 
     // Then: duplicates are removed and sorted
-    expect(files).toEqual([".env", ".env.local"]);
+    expect(entries).toEqual([".env", ".env.local"]);
   });
 
   it("should strip leading slashes from patterns", async () => {
@@ -77,8 +77,8 @@ describe("findExcludedFiles", () => {
     const globFn = vi.fn(async () => ["secret.key"]);
     const adapter = createMockAdapter({ glob: globFn });
 
-    // When: excluded files are found
-    await findExcludedFiles(adapter, ["/secret.key"]);
+    // When: excluded entries are found
+    await findExcludedEntries(adapter, ["/secret.key"]);
 
     // Then: glob is called without the leading slash
     expect(globFn).toHaveBeenCalledWith("secret.key", "/repo");
@@ -93,7 +93,7 @@ describe("copyExcludedFiles", () => {
     const adapter = createMockAdapter({
       readFile: vi.fn(async () => ".env\n"),
       glob: vi.fn(async () => [".env"]),
-      copyFile: copyFn,
+      copy: copyFn,
       mkdir: mkdirFn,
     });
 

@@ -11,6 +11,6 @@ export interface RuntimeAdapter {
   readFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
   exists(path: string): Promise<boolean>;
-  copyFile(src: string, dest: string): Promise<void>;
+  copy(src: string, dest: string): Promise<void>;
   mkdir(path: string): Promise<void>;
 }

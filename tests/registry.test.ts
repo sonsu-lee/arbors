@@ -25,7 +25,7 @@ const createMockAdapter = (): RuntimeAdapter & { files: Map<string, string> } =>
       files.set(path, content);
     }),
     exists: vi.fn(async (path: string) => files.has(path)),
-    copyFile: vi.fn(),
+    copy: vi.fn(),
     mkdir: vi.fn(),
   };
 };

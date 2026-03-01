@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { copyFile, glob, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { cp, glob, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
 import type { RuntimeAdapter } from "./adapter.js";
@@ -47,9 +47,9 @@ export const createNodeAdapter = (): RuntimeAdapter => ({
     }
   },
 
-  async copyFile(src, dest) {
+  async copy(src, dest) {
     await mkdir(dirname(dest), { recursive: true });
-    await copyFile(src, dest);
+    await cp(src, dest, { recursive: true });
   },
 
   async mkdir(path) {

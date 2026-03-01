@@ -1,4 +1,4 @@
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type { RuntimeAdapter } from "../runtime/adapter.js";
 import { getRepoRoot } from "./worktree.js";
 
@@ -16,20 +16,18 @@ export const getExcludePatterns = async (adapter: RuntimeAdapter): Promise<strin
     .filter((line) => line !== "" && !line.startsWith("#"));
 };
 
-export const findExcludedFiles = async (
+export const findExcludedEntries = async (
   adapter: RuntimeAdapter,
   patterns: string[],
 ): Promise<string[]> => {
   const repoRoot = await getRepoRoot(adapter);
-
   const cleaned = patterns.map((p) => p.replace(/^\//, ""));
-  const expanded = cleaned.flatMap((p) => [p, `${p}/**`]);
 
-  const fileGroups = await Promise.all(
-    expanded.map((pattern) => adapter.glob(pattern, repoRoot)),
+  const groups = await Promise.all(
+    cleaned.map((pattern) => adapter.glob(pattern, repoRoot)),
   );
 
-  return [...new Set(fileGroups.flat())].sort();
+  return [...new Set(groups.flat())].sort();
 };
 
 export const copyExcludedFiles = async (
@@ -40,20 +38,19 @@ export const copyExcludedFiles = async (
   if (patterns.length === 0) return [];
 
   const repoRoot = await getRepoRoot(adapter);
-  const files = await findExcludedFiles(adapter, patterns);
+  const entries = await findExcludedEntries(adapter, patterns);
 
   const copied: string[] = [];
 
   await Promise.all(
-    files.map(async (file) => {
-      const src = join(repoRoot, file);
-      const dest = join(worktreePath, file);
+    entries.map(async (entry) => {
+      const src = join(repoRoot, entry);
+      const dest = join(worktreePath, entry);
       try {
-        await adapter.mkdir(dirname(dest));
-        await adapter.copyFile(src, dest);
-        copied.push(file);
+        await adapter.copy(src, dest);
+        copied.push(entry);
       } catch {
-        // Skip non-copyable files (sockets, pipes, etc.)
+        // Skip non-copyable entries (sockets, pipes, etc.)
       }
     }),
   );

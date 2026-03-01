@@ -11,7 +11,7 @@ const createMockAdapter = (existingFiles: string[], execLog: string[][] = []): R
   readFile: vi.fn(),
   writeFile: vi.fn(),
   exists: vi.fn(async (path: string) => existingFiles.some((f) => path.endsWith(f))),
-  copyFile: vi.fn(),
+  copy: vi.fn(),
   mkdir: vi.fn(),
 });
 

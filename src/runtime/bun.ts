@@ -36,10 +36,10 @@ export const createBunAdapter = (): RuntimeAdapter => ({
     return Bun.file(path).exists();
   },
 
-  async copyFile(src, dest) {
-    const { mkdir } = await import("node:fs/promises");
+  async copy(src, dest) {
+    const { cp, mkdir } = await import("node:fs/promises");
     await mkdir(dirname(dest), { recursive: true });
-    await Bun.write(dest, Bun.file(src));
+    await cp(src, dest, { recursive: true });
   },
 
   async mkdir(path) {
