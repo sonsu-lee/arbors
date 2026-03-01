@@ -52,14 +52,20 @@ pnpm build
 ### CLI
 
 ```sh
-# Create a new worktree
-arbor add feature-login --base main
+# Create a new worktree (new branch from main)
+arbor add feature/login --base main
+
+# Checkout an existing local branch as a worktree
+arbor add feature/login
+
+# Checkout a remote branch as a worktree
+arbor add feature/login --remote
 
 # List worktrees
 arbor list
 
 # Remove a worktree (with safety checks)
-arbor remove feature-login
+arbor remove feature/login
 
 # Show exclude patterns
 arbor excluded
@@ -95,8 +101,7 @@ Project override: `.arbor/config.json`
   "language": "en",
   "packageManager": "auto",
   "copyExcludes": true,
-  "worktreeDir": "../{repo}-arbor",
-  "branchPrefix": "arbor"
+  "worktreeDir": "../{repo}-arbor"
 }
 ```
 
@@ -107,7 +112,6 @@ Project override: `.arbor/config.json`
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            | Package manager for `install`  |
 | `copyExcludes`   | `true`, `false`                       | `true`              | Copy `.git/info/exclude` files |
 | `worktreeDir`    | string                                | `"../{repo}-arbor"` | Worktree parent directory      |
-| `branchPrefix`   | string (min 1 char)                   | `"arbor"`           | Branch name prefix             |
 
 Project-level config overrides global settings.
 

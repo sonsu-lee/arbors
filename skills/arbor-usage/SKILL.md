@@ -10,12 +10,14 @@ arbor is a CLI/TUI tool for managing git worktrees. It handles worktree creation
 ## Quick Reference
 
 ```sh
-arbor                              # Launch interactive TUI (fuzzy search)
-arbor add <name> [--base <branch>] # Create worktree → branch {prefix}/<name>
-arbor remove <name>                # Remove worktree (safety checks first)
-arbor list [--plain]               # List arbor-managed worktrees
-arbor excluded                     # Show .git/info/exclude patterns
-arbor config                       # Show current configuration
+arbor                                          # Launch interactive TUI (fuzzy search)
+arbor add <branch> --base <base>               # Create new branch worktree
+arbor add <branch>                             # Checkout existing local branch
+arbor add <branch> --remote                    # Fetch and checkout remote branch
+arbor remove <branch>                          # Remove worktree (safety checks first)
+arbor list [--plain]                           # List arbor-managed worktrees
+arbor excluded                                 # Show .git/info/exclude patterns
+arbor config                                   # Show current configuration
 ```
 
 ## Installation & Setup
@@ -40,20 +42,33 @@ source /path/to/arbor/shell/arbor-wrapper.sh
 
 ## How `arbor add` Works
 
-1. Validate name against `/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/` (no `..` allowed)
-2. Check if branch `{branchPrefix}/<name>` already exists — error if so
-3. Run `git worktree add -b {branchPrefix}/<name> ../{repo}-arbor/<name> <base>`
+Three modes based on flags:
+
+**`--base <branch>`** — Create new branch:
+1. Validate branch name against `/^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/` (slashes allowed, no `..`)
+2. Check if branch already exists — error if so
+3. Run `git worktree add -b <branch> ../{repo}-arbor/<dir> <base>` (dir = branch with `/` → `-`)
+
+**No flags** — Checkout existing local branch:
+1. Check if local branch exists — error with hint to use `--base` if not
+2. Run `git worktree add ../{repo}-arbor/<dir> <branch>`
+
+**`--remote`** — Fetch and checkout remote branch:
+1. Check if remote branch exists on origin — error if not
+2. Run `git fetch origin <branch>`, then `git worktree add -b <branch> ../{repo}-arbor/<dir> origin/<branch>`
+
+All modes then:
 4. Copy files matching `.git/info/exclude` patterns to the new worktree (if `copyExcludes: true`)
 5. Detect runtime manager (mise.toml → `mise install`, .nvmrc → `nvm install`)
 6. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
-7. Register the project in `~/.arbor/db.json` with timestamp
+7. Register in `~/.arbor/db.json` (project + worktree tracking)
 
 ## Safety
 
 - `arbor remove` refuses to delete worktrees with uncommitted changes (`git status --porcelain`)
 - Cannot remove the main worktree
-- Name validation prevents path traversal and unsafe characters
-- Branch deletion (`git branch -D {branchPrefix}/<name>`) happens after worktree removal
+- Name validation allows slashes (`feature/login`) but prevents path traversal (`..`) and unsafe characters
+- Branch deletion (`git branch -D <branch>`) happens after worktree removal
 - Branch existence is checked before creation to prevent overwriting
 
 ## Configuration
@@ -67,12 +82,11 @@ Global: `~/.arbor/config.json` — Project override: `.arbor/config.json` (in re
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
 | `copyExcludes`   | `true`, `false`                        | `true`              |
 | `worktreeDir`    | string with `{repo}` placeholder       | `"../{repo}-arbor"` |
-| `branchPrefix`   | string (min 1 char)                    | `"arbor"`           |
 
 ## Data Files
 
 - `~/.arbor/config.json` — Global configuration
-- `~/.arbor/db.json` — Project registry (name, path, lastAccessed per project)
+- `~/.arbor/db.json` — Project registry + worktree tracking (projects and worktrees per project)
 - `.arbor/config.json` — Per-project config override
 - `.git/info/exclude` — Patterns for files to copy into new worktrees
 
@@ -88,7 +102,7 @@ src/
 │   ├── safety.ts          # Name validation, uncommitted changes check, main worktree guard
 │   └── exclude.ts         # Parse .git/info/exclude, find matching files, copy to worktree
 ├── project/
-│   ├── registry.ts        # ~/.arbor/db.json read/write, project CRUD
+│   ├── registry.ts        # ~/.arbor/db.json read/write, project + worktree CRUD
 │   └── setup.ts           # Package manager & runtime manager detection and install
 ├── runtime/
 │   ├── adapter.ts         # RuntimeAdapter interface (exec, glob, readFile, etc.)
