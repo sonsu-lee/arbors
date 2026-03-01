@@ -8,20 +8,28 @@ export interface ProjectEntry {
   lastAccessed: string;
 }
 
+export interface WorktreeEntry {
+  path: string;
+  branch: string;
+  projectPath: string;
+}
+
 interface RegistryData {
   projects: ProjectEntry[];
+  worktrees: WorktreeEntry[];
 }
 
 const DB_PATH = join(homedir(), ".arbor", "db.json");
 
 const readRegistry = async (adapter: RuntimeAdapter): Promise<RegistryData> => {
-  if (!(await adapter.exists(DB_PATH))) return { projects: [] };
+  if (!(await adapter.exists(DB_PATH))) return { projects: [], worktrees: [] };
 
   try {
     const content = await adapter.readFile(DB_PATH);
-    return JSON.parse(content) as RegistryData;
+    const data = JSON.parse(content) as Partial<RegistryData>;
+    return { projects: data.projects ?? [], worktrees: data.worktrees ?? [] };
   } catch {
-    return { projects: [] };
+    return { projects: [], worktrees: [] };
   }
 };
 
@@ -66,5 +74,35 @@ export const touchProject = async (adapter: RuntimeAdapter, path: string): Promi
 export const removeProject = async (adapter: RuntimeAdapter, path: string): Promise<void> => {
   const data = await readRegistry(adapter);
   data.projects = data.projects.filter((p) => p.path !== path);
+  await writeRegistry(adapter, data);
+};
+
+export const registerWorktree = async (
+  adapter: RuntimeAdapter,
+  path: string,
+  branch: string,
+  projectPath: string,
+): Promise<void> => {
+  const data = await readRegistry(adapter);
+  const existing = data.worktrees.findIndex((w) => w.path === path);
+
+  if (existing === -1) {
+    data.worktrees.push({ path, branch, projectPath });
+  }
+
+  await writeRegistry(adapter, data);
+};
+
+export const getWorktrees = async (
+  adapter: RuntimeAdapter,
+  projectPath: string,
+): Promise<WorktreeEntry[]> => {
+  const data = await readRegistry(adapter);
+  return data.worktrees.filter((w) => w.projectPath === projectPath);
+};
+
+export const unregisterWorktree = async (adapter: RuntimeAdapter, path: string): Promise<void> => {
+  const data = await readRegistry(adapter);
+  data.worktrees = data.worktrees.filter((w) => w.path !== path);
   await writeRegistry(adapter, data);
 };

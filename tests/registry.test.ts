@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getProjects, registerProject, removeProject } from "../src/project/registry.js";
+import {
+  getProjects,
+  getWorktrees,
+  registerProject,
+  registerWorktree,
+  removeProject,
+  unregisterWorktree,
+} from "../src/project/registry.js";
 import type { RuntimeAdapter } from "../src/runtime/adapter.js";
 
 const createMockAdapter = (): RuntimeAdapter & { files: Map<string, string> } => {
@@ -90,5 +97,40 @@ describe("Project Registry", () => {
     // Then: no projects remain
     const projects = await getProjects(adapter);
     expect(projects).toEqual([]);
+  });
+});
+
+describe("Worktree Registry", () => {
+  let adapter: ReturnType<typeof createMockAdapter>;
+
+  beforeEach(() => {
+    adapter = createMockAdapter();
+  });
+
+  it("should register and retrieve worktrees by project", async () => {
+    await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
+    await registerWorktree(adapter, "/wt/fix-bug", "fix/bug", "/repo");
+    await registerWorktree(adapter, "/wt/other", "other", "/other-repo");
+
+    const worktrees = await getWorktrees(adapter, "/repo");
+    expect(worktrees).toHaveLength(2);
+    expect(worktrees[0].branch).toBe("feature/login");
+    expect(worktrees[1].branch).toBe("fix/bug");
+  });
+
+  it("should not duplicate worktrees with the same path", async () => {
+    await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
+    await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
+
+    const worktrees = await getWorktrees(adapter, "/repo");
+    expect(worktrees).toHaveLength(1);
+  });
+
+  it("should unregister a worktree by path", async () => {
+    await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
+    await unregisterWorktree(adapter, "/wt/feature-login");
+
+    const worktrees = await getWorktrees(adapter, "/repo");
+    expect(worktrees).toEqual([]);
   });
 });

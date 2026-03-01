@@ -13,7 +13,7 @@ import {
   removeWorktree,
 } from "../src/git/worktree.js";
 import { loadMessages } from "../src/i18n/index.js";
-import { registerProject } from "../src/project/registry.js";
+import { getWorktrees, registerProject, registerWorktree, unregisterWorktree } from "../src/project/registry.js";
 import { runSetup } from "../src/project/setup.js";
 import { createAdapter } from "../src/runtime/index.js";
 
@@ -148,6 +148,7 @@ const main = async () => {
 
       const repoRoot = await getRepoRoot(adapter);
       await registerProject(adapter, name, repoRoot);
+      await registerWorktree(adapter, worktreePath, name, repoRoot);
 
       console.log();
       console.log(chalk.gray(`  cd ${worktreePath}`));
@@ -185,13 +186,24 @@ const main = async () => {
 
       console.log(chalk.gray(msg.removing));
       await removeWorktree(adapter, target.path, target.branch);
+      await unregisterWorktree(adapter, target.path);
       console.log(chalk.green(`✓ ${msg.removed}: ${name}`));
       break;
     }
 
     case "list": {
-      const worktrees = await listWorktrees(adapter);
-      const managedWorktrees = worktrees.filter((wt) => !wt.isMain);
+      const repoRootForList = await getRepoRoot(adapter);
+      const dbWorktrees = await getWorktrees(adapter, repoRootForList);
+      const gitWorktrees = await listWorktrees(adapter);
+      const gitPaths = new Set(gitWorktrees.map((wt) => wt.path));
+
+      // Reconcile: remove db entries that no longer exist in git
+      const stale = dbWorktrees.filter((w) => !gitPaths.has(w.path));
+      for (const w of stale) {
+        await unregisterWorktree(adapter, w.path);
+      }
+
+      const managedWorktrees = dbWorktrees.filter((w) => gitPaths.has(w.path));
 
       if (flags.plain) {
         managedWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
