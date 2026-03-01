@@ -52,14 +52,11 @@ pnpm build
 ### CLI
 
 ```sh
-# Create a new worktree (new branch from main)
-arbor add feature/login --base main
+# Create a new branch worktree (from main)
+arbor new feature/login --base main
 
-# Checkout an existing local branch as a worktree
+# Checkout an existing branch (auto-detects local or remote)
 arbor add feature/login
-
-# Checkout a remote branch as a worktree
-arbor add feature/login --remote
 
 # List worktrees
 arbor list

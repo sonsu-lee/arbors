@@ -10,14 +10,13 @@ arbor is a CLI/TUI tool for managing git worktrees. It handles worktree creation
 ## Quick Reference
 
 ```sh
-arbor                                          # Launch interactive TUI (fuzzy search)
-arbor add <branch> --base <base>               # Create new branch worktree
-arbor add <branch>                             # Checkout existing local branch
-arbor add <branch> --remote                    # Fetch and checkout remote branch
-arbor remove <branch>                          # Remove worktree (safety checks first)
-arbor list [--plain]                           # List arbor-managed worktrees
-arbor excluded                                 # Show .git/info/exclude patterns
-arbor config                                   # Show current configuration
+arbor                                  # Launch interactive TUI (fuzzy search)
+arbor new <branch> [--base <base>]     # Create new branch + worktree
+arbor add <branch>                     # Checkout existing branch (local → remote auto)
+arbor remove <branch>                  # Remove worktree (safety checks first)
+arbor list [--plain]                   # List arbor-managed worktrees
+arbor excluded                         # Show .git/info/exclude patterns
+arbor config                           # Show current configuration
 ```
 
 ## Installation & Setup
@@ -40,28 +39,25 @@ source /path/to/arbor/shell/arbor-wrapper.zsh
 source /path/to/arbor/shell/arbor-wrapper.sh
 ```
 
-## How `arbor add` Works
+## How `arbor new` Works
 
-Three modes based on flags:
-
-**`--base <branch>`** — Create new branch:
 1. Validate branch name against `/^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/` (slashes allowed, no `..`)
 2. Check if branch already exists — error if so
 3. Run `git worktree add -b <branch> ../{repo}-arbor/<dir> <base>` (dir = branch with `/` → `-`)
-
-**No flags** — Checkout existing local branch:
-1. Check if local branch exists — error with hint to use `--base` if not
-2. Run `git worktree add ../{repo}-arbor/<dir> <branch>`
-
-**`--remote`** — Fetch and checkout remote branch:
-1. Check if remote branch exists on origin — error if not
-2. Run `git fetch origin <branch>`, then `git worktree add -b <branch> ../{repo}-arbor/<dir> origin/<branch>`
-
-All modes then:
-4. Copy files matching `.git/info/exclude` patterns to the new worktree (if `copyExcludes: true`)
+4. Copy files matching `.git/info/exclude` patterns (if `copyExcludes: true`)
 5. Detect runtime manager (mise.toml → `mise install`, .nvmrc → `nvm install`)
 6. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
 7. Register in `~/.arbor/db.json` (project + worktree tracking)
+
+## How `arbor add` Works
+
+Smart checkout — tries local first, then remote:
+
+1. Validate branch name
+2. If local branch exists → `git worktree add ../{repo}-arbor/<dir> <branch>`
+3. Else if remote branch exists → `git fetch origin <branch>`, then create worktree from `origin/<branch>`
+4. Else → error with hint to use `arbor new`
+5. Copy excluded files, install deps, register in db (same as `arbor new`)
 
 ## Safety
 
