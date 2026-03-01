@@ -78,13 +78,15 @@ export const createWorktree = async (
     throw new Error(`Branch '${branch}' already exists`);
   }
 
+  await adapter.exec("git", ["fetch", "origin", base]);
+
   const result = await adapter.exec("git", [
     "worktree",
     "add",
     "-b",
     branch,
     worktreePath,
-    base,
+    `origin/${base}`,
   ]);
 
   if (result.exitCode !== 0) {
