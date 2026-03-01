@@ -1,7 +1,7 @@
 {
   "name": "arbor",
-  "version": "0.1.0",
-  "description": "Git worktree manager with interactive TUI and CLI",
-  "repository": "https://github.com/sungsulee/arbor",
-  "license": "MIT"
+  "description": "Git worktree manager — create, switch, and remove worktrees with auto dependency install, exclude file copying, and interactive fuzzy search TUI. Use this plugin when working with git worktrees or managing parallel development branches.",
+  "author": {
+    "name": "sonsu"
+  }
 }
