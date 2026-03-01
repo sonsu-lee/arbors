@@ -29,7 +29,7 @@ export const getDefaultBranch = async (adapter: RuntimeAdapter): Promise<string>
   return mainCheck.exitCode === 0 ? "main" : "master";
 };
 
-const parseWorktreeBlock = (block: string, branchPrefix: string): WorktreeInfo | null => {
+const parseWorktreeBlock = (block: string, isFirst: boolean): WorktreeInfo | null => {
   const lines = block.split("\n");
   const pathLine = lines.find((l) => l.startsWith("worktree "));
   const branchLine = lines.find((l) => l.startsWith("branch "));
@@ -38,18 +38,17 @@ const parseWorktreeBlock = (block: string, branchPrefix: string): WorktreeInfo |
 
   const path = pathLine.slice(9);
   const branch = branchLine?.slice(7).replace("refs/heads/", "") ?? "";
-  const isMain = !lines.some((l) => l === "detached" || l.startsWith(`branch refs/heads/${branchPrefix}/`));
 
-  return { path, branch, isMain };
+  return { path, branch, isMain: isFirst };
 };
 
-export const listWorktrees = async (adapter: RuntimeAdapter, branchPrefix: string): Promise<WorktreeInfo[]> => {
+export const listWorktrees = async (adapter: RuntimeAdapter): Promise<WorktreeInfo[]> => {
   const result = await adapter.exec("git", ["worktree", "list", "--porcelain"]);
   if (result.exitCode !== 0) return [];
 
   return result.stdout
     .split("\n\n")
-    .map((block: string) => parseWorktreeBlock(block, branchPrefix))
+    .map((block: string, index: number) => parseWorktreeBlock(block, index === 0))
     .filter((wt): wt is WorktreeInfo => wt !== null);
 };
 
@@ -58,27 +57,32 @@ export const branchExists = async (adapter: RuntimeAdapter, branchName: string):
   return result.exitCode === 0;
 };
 
+export const remoteBranchExists = async (adapter: RuntimeAdapter, branchName: string): Promise<boolean> => {
+  const result = await adapter.exec("git", ["ls-remote", "--heads", "origin", branchName]);
+  return result.exitCode === 0 && result.stdout.length > 0;
+};
+
+const branchToDir = (branch: string): string => branch.replaceAll("/", "-");
+
 export const createWorktree = async (
   adapter: RuntimeAdapter,
-  name: string,
-  branchPrefix: string,
+  branch: string,
   baseBranch?: string,
 ): Promise<string> => {
   const repoName = await getRepoName(adapter);
   const repoRoot = await getRepoRoot(adapter);
   const base = baseBranch ?? (await getDefaultBranch(adapter));
-  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, name);
-  const branchName = `${branchPrefix}/${name}`;
+  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, branchToDir(branch));
 
-  if (await branchExists(adapter, branchName)) {
-    throw new Error(`Branch '${branchName}' already exists`);
+  if (await branchExists(adapter, branch)) {
+    throw new Error(`Branch '${branch}' already exists`);
   }
 
   const result = await adapter.exec("git", [
     "worktree",
     "add",
     "-b",
-    branchName,
+    branch,
     worktreePath,
     base,
   ]);
@@ -90,17 +94,59 @@ export const createWorktree = async (
   return worktreePath;
 };
 
-export const removeWorktree = async (adapter: RuntimeAdapter, name: string, branchPrefix: string): Promise<void> => {
+export const checkoutWorktree = async (
+  adapter: RuntimeAdapter,
+  branch: string,
+): Promise<string> => {
   const repoName = await getRepoName(adapter);
   const repoRoot = await getRepoRoot(adapter);
-  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, name);
-  const branchName = `${branchPrefix}/${name}`;
+  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, branchToDir(branch));
 
+  const result = await adapter.exec("git", ["worktree", "add", worktreePath, branch]);
+
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr || "Failed to checkout worktree");
+  }
+
+  return worktreePath;
+};
+
+export const checkoutRemoteWorktree = async (
+  adapter: RuntimeAdapter,
+  branch: string,
+): Promise<string> => {
+  await adapter.exec("git", ["fetch", "origin", branch]);
+
+  const repoName = await getRepoName(adapter);
+  const repoRoot = await getRepoRoot(adapter);
+  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, branchToDir(branch));
+
+  const result = await adapter.exec("git", [
+    "worktree",
+    "add",
+    "-b",
+    branch,
+    worktreePath,
+    `origin/${branch}`,
+  ]);
+
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr || "Failed to checkout remote worktree");
+  }
+
+  return worktreePath;
+};
+
+export const removeWorktree = async (
+  adapter: RuntimeAdapter,
+  worktreePath: string,
+  branch: string,
+): Promise<void> => {
   const removeResult = await adapter.exec("git", ["worktree", "remove", "--force", worktreePath]);
 
   if (removeResult.exitCode !== 0) {
     throw new Error(removeResult.stderr || "Failed to remove worktree");
   }
 
-  await adapter.exec("git", ["branch", "-D", branchName]);
+  await adapter.exec("git", ["branch", "-D", branch]);
 };

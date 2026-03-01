@@ -36,9 +36,19 @@ describe("validateWorktreeName", () => {
     expect(validateWorktreeName("foo..bar")).toBe(false);
   });
 
+  it("should accept names with slashes for branch conventions", () => {
+    // Given: names with slashes (feature/xxx, fix/xxx patterns)
+    const names = ["feature/login", "fix/ACD-123", "release/1.0"];
+
+    // When/Then: all should be valid
+    names.forEach((name) => {
+      expect(validateWorktreeName(name)).toBe(true);
+    });
+  });
+
   it("should reject names with spaces or special chars", () => {
-    // Given: names with spaces or slashes
-    const names = ["has space", "has/slash", "has@at"];
+    // Given: names with spaces or special characters
+    const names = ["has space", "has@at"];
 
     // When/Then: all should be invalid
     names.forEach((name) => {

@@ -2,7 +2,16 @@ import chalk from "chalk";
 import { loadConfig } from "../src/config.js";
 import { copyExcludedFiles, getExcludePatterns } from "../src/git/exclude.js";
 import { validateWorktreeName, canSafelyRemove } from "../src/git/safety.js";
-import { createWorktree, getRepoRoot, listWorktrees, removeWorktree } from "../src/git/worktree.js";
+import {
+  branchExists,
+  checkoutRemoteWorktree,
+  checkoutWorktree,
+  createWorktree,
+  getRepoRoot,
+  listWorktrees,
+  remoteBranchExists,
+  removeWorktree,
+} from "../src/git/worktree.js";
 import { loadMessages } from "../src/i18n/index.js";
 import { registerProject } from "../src/project/registry.js";
 import { runSetup } from "../src/project/setup.js";
@@ -18,6 +27,7 @@ const parseArgs = (argv: string[]) => {
       acc[arg.slice(2)] = args[i + 1];
     }
     if (arg === "--plain") acc.plain = "true";
+    if (arg === "--remote") acc.remote = "true";
     if (arg === "--help" || arg === "-h") acc.help = "true";
     if (arg === "--version" || arg === "-v") acc.version = "true";
     return acc;
@@ -32,11 +42,11 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log(chalk.white(msg.usage));
   console.log();
   console.log(chalk.white(msg.commands));
-  console.log("  add <name> [--base <branch>]  Create a new worktree");
-  console.log("  remove <name>                 Remove a worktree");
-  console.log("  list                          List worktrees");
-  console.log("  excluded                      Show exclude patterns");
-  console.log("  config [--runtime|--lang]     Show or set config");
+  console.log("  add <branch> [--base <branch>] [--remote]  Add a worktree");
+  console.log("  remove <branch>                            Remove a worktree");
+  console.log("  list                                       List worktrees");
+  console.log("  excluded                                   Show exclude patterns");
+  console.log("  config [--runtime|--lang]                  Show or set config");
   console.log();
   console.log(chalk.white(msg.options));
   console.log("  --plain                       Machine-readable output");
@@ -78,7 +88,7 @@ const main = async () => {
   switch (command) {
     case "add": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: arbor add <name> [--base <branch>]"));
+        console.error(chalk.red("✗ Usage: arbor add <branch> [--base <branch>] [--remote]"));
         process.exitCode = 1;
         return;
       }
@@ -92,10 +102,37 @@ const main = async () => {
       console.log(chalk.cyan.bold("arbor add"));
       console.log();
 
-      console.log(chalk.gray(msg.creating));
-      const worktreePath = await createWorktree(adapter, name, config.branchPrefix, flags.base);
-      console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
-      console.log(chalk.gray(`  Branch: ${config.branchPrefix}/${name}`));
+      let worktreePath: string;
+
+      if (flags.base) {
+        // New branch creation mode
+        console.log(chalk.gray(msg.creating));
+        worktreePath = await createWorktree(adapter, name, flags.base);
+        console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
+        console.log(chalk.gray(`  Branch: ${name} (from ${flags.base})`));
+      } else if (flags.remote) {
+        // Remote branch checkout mode
+        if (!(await remoteBranchExists(adapter, name))) {
+          console.error(chalk.red(`✗ Remote branch '${name}' not found`));
+          process.exitCode = 1;
+          return;
+        }
+        console.log(chalk.gray(`Fetching and checking out ${name}...`));
+        worktreePath = await checkoutRemoteWorktree(adapter, name);
+        console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
+        console.log(chalk.gray(`  Branch: ${name} (from origin/${name})`));
+      } else {
+        // Existing local branch checkout mode
+        if (!(await branchExists(adapter, name))) {
+          console.error(chalk.red(`✗ Branch '${name}' not found. Use --base to create a new branch.`));
+          process.exitCode = 1;
+          return;
+        }
+        console.log(chalk.gray(`Checking out ${name}...`));
+        worktreePath = await checkoutWorktree(adapter, name);
+        console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
+        console.log(chalk.gray(`  Branch: ${name}`));
+      }
 
       if (config.copyExcludes) {
         console.log();
@@ -119,7 +156,7 @@ const main = async () => {
 
     case "remove": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: arbor remove <name>"));
+        console.error(chalk.red("✗ Usage: arbor remove <branch>"));
         process.exitCode = 1;
         return;
       }
@@ -128,11 +165,17 @@ const main = async () => {
       console.log(chalk.cyan.bold("arbor remove"));
       console.log();
 
-      const repoRoot = await getRepoRoot(adapter);
-      const { basename, dirname, resolve } = await import("node:path");
-      const worktreePath = resolve(dirname(repoRoot), `${basename(repoRoot)}-arbor`, name);
+      // Find the worktree by branch name
+      const worktrees = await listWorktrees(adapter);
+      const target = worktrees.find((wt) => wt.branch === name);
 
-      const { safe, reason } = await canSafelyRemove(adapter, worktreePath, config.branchPrefix);
+      if (!target) {
+        console.error(chalk.red(`✗ No worktree found for branch '${name}'`));
+        process.exitCode = 1;
+        return;
+      }
+
+      const { safe, reason } = await canSafelyRemove(adapter, target.path);
       if (!safe) {
         const errorMsg = reason ? msg[reason as keyof typeof msg] : "Cannot remove";
         console.error(chalk.red(`✗ ${errorMsg}`));
@@ -141,14 +184,14 @@ const main = async () => {
       }
 
       console.log(chalk.gray(msg.removing));
-      await removeWorktree(adapter, name, config.branchPrefix);
+      await removeWorktree(adapter, target.path, target.branch);
       console.log(chalk.green(`✓ ${msg.removed}: ${name}`));
       break;
     }
 
     case "list": {
-      const worktrees = await listWorktrees(adapter, config.branchPrefix);
-      const managedWorktrees = worktrees.filter((wt) => wt.branch.startsWith(`${config.branchPrefix}/`));
+      const worktrees = await listWorktrees(adapter);
+      const managedWorktrees = worktrees.filter((wt) => !wt.isMain);
 
       if (flags.plain) {
         managedWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
@@ -159,8 +202,7 @@ const main = async () => {
         console.log(chalk.cyan.bold("arbor list"));
         console.log();
         managedWorktrees.forEach((wt) => {
-          const wtName = wt.branch.replace(`${config.branchPrefix}/`, "");
-          console.log(chalk.white(wtName));
+          console.log(chalk.white(wt.branch));
           console.log(chalk.gray(`  ${wt.path}`));
         });
       }

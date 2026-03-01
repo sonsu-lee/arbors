@@ -7,7 +7,6 @@ export interface ArborConfig {
   packageManager: "auto" | "pnpm" | "yarn" | "npm";
   copyExcludes: boolean;
   worktreeDir: string;
-  branchPrefix: string;
 }
 
 const DEFAULT_CONFIG: ArborConfig = {
@@ -16,7 +15,6 @@ const DEFAULT_CONFIG: ArborConfig = {
   packageManager: "auto",
   copyExcludes: true,
   worktreeDir: "../{repo}-arbor",
-  branchPrefix: "arbor",
 } satisfies ArborConfig;
 
 const GLOBAL_CONFIG_PATH = join(homedir(), ".arbor", "config.json");
@@ -24,13 +22,7 @@ const PROJECT_CONFIG_DIR = ".arbor";
 const PROJECT_CONFIG_FILE = "config.json";
 
 const mergeConfig = (base: ArborConfig, override: Partial<ArborConfig>): ArborConfig => {
-  const merged = { ...base, ...override };
-
-  if (typeof merged.branchPrefix === "string" && merged.branchPrefix.trim() === "") {
-    merged.branchPrefix = base.branchPrefix;
-  }
-
-  return merged;
+  return { ...base, ...override };
 };
 
 const readJsonFile = async (

@@ -7,7 +7,6 @@ import type { Messages } from "../i18n/en.js";
 
 interface WorktreeSelectorProps {
   worktrees: WorktreeInfo[];
-  branchPrefix: string;
   onSelect: (worktree: WorktreeInfo) => void;
   onCreate: () => void;
   onDelete: (worktree: WorktreeInfo) => void;
@@ -17,7 +16,6 @@ interface WorktreeSelectorProps {
 
 export const WorktreeSelector: React.FC<WorktreeSelectorProps> = ({
   worktrees,
-  branchPrefix,
   onSelect,
   onCancel,
   messages,
@@ -27,7 +25,7 @@ export const WorktreeSelector: React.FC<WorktreeSelectorProps> = ({
   }
 
   const items: FuzzyListItem[] = worktrees.map((wt) => ({
-    label: wt.branch.replace(`${branchPrefix}/`, ""),
+    label: wt.branch,
     value: wt.path,
   }));
 
