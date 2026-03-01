@@ -1,5 +1,5 @@
 node_modules/
 dist/
-.arbor/
+.copse/
 *.tsbuildinfo
 .DS_Store

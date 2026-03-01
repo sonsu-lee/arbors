@@ -32,7 +32,7 @@ export interface Messages {
 
 export const en: Messages = {
   selectProject: "Select a project:",
-  noProjects: "No projects registered. Run arbor in a git repository first.",
+  noProjects: "No projects registered. Run copse in a git repository first.",
   recentProjects: "Recent projects",
   selectWorktree: "Select a worktree:",
   noWorktrees: "No worktrees found.",
@@ -56,8 +56,8 @@ export const en: Messages = {
   helpWorktree: "Ctrl+B: new branch | Ctrl+X: delete | Esc: back",
   configSaved: "Configuration saved.",
   configCurrent: "Current configuration:",
-  version: "arbor v0.1.0",
-  usage: "Usage: arbor [command] [options]",
+  version: "copse v0.1.0",
+  usage: "Usage: copse [command] [options]",
   commands: "Commands:",
   options: "Options:",
 };

@@ -16,11 +16,11 @@ const DEFAULT_CONFIG: ArborConfig = {
   packageManager: "auto",
   copyExcludes: true,
   copySkip: ["node_modules"],
-  worktreeDir: "~/arbor/{repo}",
+  worktreeDir: "~/copse/{repo}",
 } satisfies ArborConfig;
 
-const GLOBAL_CONFIG_PATH = join(homedir(), ".arbor", "config.json");
-const PROJECT_CONFIG_DIR = ".arbor";
+const GLOBAL_CONFIG_PATH = join(homedir(), ".copse", "config.json");
+const PROJECT_CONFIG_DIR = ".copse";
 const PROJECT_CONFIG_FILE = "config.json";
 
 const mergeConfig = (base: ArborConfig, override: Partial<ArborConfig>): ArborConfig => {

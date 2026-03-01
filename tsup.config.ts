@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["bin/arbor.ts"],
+  entry: ["bin/copse.ts"],
   format: "esm",
   target: "node20",
   outDir: "dist",

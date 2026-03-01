@@ -19,7 +19,7 @@ interface RegistryData {
   worktrees: WorktreeEntry[];
 }
 
-const DB_PATH = join(homedir(), ".arbor", "db.json");
+const DB_PATH = join(homedir(), ".copse", "db.json");
 
 const readRegistry = async (adapter: RuntimeAdapter): Promise<RegistryData> => {
   if (!(await adapter.exists(DB_PATH))) return { projects: [], worktrees: [] };

@@ -1,5 +1,5 @@
 {
-  "name": "arbor",
+  "name": "copse",
   "description": "Git worktree manager — create, switch, and remove worktrees with auto dependency install, exclude file copying, and interactive fuzzy search TUI. Use this plugin when working with git worktrees or managing parallel development branches.",
   "author": {
     "name": "sonsu"

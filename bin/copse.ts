@@ -88,7 +88,7 @@ const main = async () => {
   switch (command) {
     case "new": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: arbor new <branch> [--base <branch>]"));
+        console.error(chalk.red("✗ Usage: copse new <branch> [--base <branch>]"));
         process.exitCode = 1;
         return;
       }
@@ -99,7 +99,7 @@ const main = async () => {
       }
 
       console.log();
-      console.log(chalk.cyan.bold("arbor new"));
+      console.log(chalk.cyan.bold("copse new"));
       console.log();
 
       console.log(chalk.gray(msg.creating));
@@ -141,7 +141,7 @@ const main = async () => {
 
     case "add": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: arbor add <branch>"));
+        console.error(chalk.red("✗ Usage: copse add <branch>"));
         process.exitCode = 1;
         return;
       }
@@ -152,7 +152,7 @@ const main = async () => {
       }
 
       console.log();
-      console.log(chalk.cyan.bold("arbor add"));
+      console.log(chalk.cyan.bold("copse add"));
       console.log();
 
       let addWorktreePath: string;
@@ -174,7 +174,7 @@ const main = async () => {
         console.log(chalk.gray(`  Branch: ${name} (from origin/${name})`));
       } else {
         console.error(
-          chalk.red(`✗ Branch '${name}' not found locally or on origin. Use 'arbor new' to create.`),
+          chalk.red(`✗ Branch '${name}' not found locally or on origin. Use 'copse new' to create.`),
         );
         process.exitCode = 1;
         return;
@@ -215,13 +215,13 @@ const main = async () => {
 
     case "remove": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: arbor remove <branch>"));
+        console.error(chalk.red("✗ Usage: copse remove <branch>"));
         process.exitCode = 1;
         return;
       }
 
       console.log();
-      console.log(chalk.cyan.bold("arbor remove"));
+      console.log(chalk.cyan.bold("copse remove"));
       console.log();
 
       // Find the worktree by branch name
@@ -269,7 +269,7 @@ const main = async () => {
         console.log(chalk.gray(msg.noWorktrees));
       } else {
         console.log();
-        console.log(chalk.cyan.bold("arbor list"));
+        console.log(chalk.cyan.bold("copse list"));
         console.log();
         managedWorktrees.forEach((wt) => {
           console.log(chalk.white(wt.branch));
@@ -285,7 +285,7 @@ const main = async () => {
         console.log(chalk.gray("No exclude patterns found in .git/info/exclude"));
       } else {
         console.log();
-        console.log(chalk.cyan.bold("arbor excluded"));
+        console.log(chalk.cyan.bold("copse excluded"));
         console.log();
         patterns.forEach((p) => console.log(`  ${p}`));
       }
@@ -294,7 +294,7 @@ const main = async () => {
 
     case "config": {
       console.log();
-      console.log(chalk.cyan.bold("arbor config"));
+      console.log(chalk.cyan.bold("copse config"));
       console.log();
       Object.entries(config).forEach(([key, value]) => {
         console.log(`  ${chalk.white(key)}: ${chalk.gray(String(value))}`);

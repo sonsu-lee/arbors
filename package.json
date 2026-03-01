@@ -1,5 +1,5 @@
 {
-  "name": "arbor",
+  "name": "copse",
   "version": "0.1.0",
   "description": "Interactive git worktree manager with TUI",
   "keywords": [
@@ -10,7 +10,7 @@
   ],
   "license": "MIT",
   "bin": {
-    "arbor": "./dist/arbor.js"
+    "copse": "./dist/copse.js"
   },
   "type": "module",
   "imports": {

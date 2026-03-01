@@ -2,7 +2,7 @@ import type { Messages } from "./en.js";
 
 export const ja: Messages = {
   selectProject: "プロジェクトを選択してください:",
-  noProjects: "登録されたプロジェクトがありません。gitリポジトリでarborを先に実行してください。",
+  noProjects: "登録されたプロジェクトがありません。gitリポジトリでcopseを先に実行してください。",
   recentProjects: "最近のプロジェクト",
 
   selectWorktree: "ワークツリーを選択してください:",
@@ -33,8 +33,8 @@ export const ja: Messages = {
   configSaved: "設定を保存しました。",
   configCurrent: "現在の設定:",
 
-  version: "arbor v0.1.0",
-  usage: "使い方: arbor [コマンド] [オプション]",
+  version: "copse v0.1.0",
+  usage: "使い方: copse [コマンド] [オプション]",
   commands: "コマンド:",
   options: "オプション:",
 } as const;

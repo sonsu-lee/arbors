@@ -1,4 +1,4 @@
-# arbor
+# copse
 
 A git worktree manager. Fuzzy-search your projects, create and switch worktrees, auto-copy excluded files and install dependencies.
 
@@ -18,8 +18,8 @@ A git worktree manager. Fuzzy-search your projects, create and switch worktrees,
 ## Install
 
 ```sh
-git clone git@github.com:<your-username>/arbor.git
-cd arbor
+git clone git@github.com:<your-username>/copse.git
+cd copse
 pnpm install
 pnpm build
 ```
@@ -36,7 +36,7 @@ Option B: shell alias (no link needed)
 
 ```sh
 # ~/.zshrc or ~/.bashrc
-alias arbor="node ~/path/to/arbor/dist/arbor.js"
+alias copse="node ~/path/to/copse/dist/copse.js"
 ```
 
 ### Update
@@ -53,27 +53,27 @@ pnpm build
 
 ```sh
 # Create a new branch worktree (from main)
-arbor new feature/login --base main
+copse new feature/login --base main
 
 # Checkout an existing branch (auto-detects local or remote)
-arbor add feature/login
+copse add feature/login
 
 # List worktrees
-arbor list
+copse list
 
 # Remove a worktree (with safety checks)
-arbor remove feature/login
+copse remove feature/login
 
 # Show exclude patterns
-arbor excluded
+copse excluded
 
 # Show current config
-arbor config
+copse config
 ```
 
 ### Interactive TUI
 
-Run `arbor` with no arguments to launch the TUI. Type to filter, arrow keys to navigate, Enter to select.
+Run `copse` with no arguments to launch the TUI. Type to filter, arrow keys to navigate, Enter to select.
 
 ### Shell Integration
 
@@ -81,16 +81,16 @@ Add to your shell config for automatic `cd` after worktree selection:
 
 ```sh
 # bash (~/.bashrc)
-source /path/to/arbor/shell/arbor-wrapper.sh
+source /path/to/copse/shell/copse-wrapper.sh
 
 # zsh (~/.zshrc)
-source /path/to/arbor/shell/arbor-wrapper.zsh
+source /path/to/copse/shell/copse-wrapper.zsh
 ```
 
 ## Configuration
 
-Global config: `~/.arbor/config.json`
-Project override: `.arbor/config.json`
+Global config: `~/.copse/config.json`
+Project override: `.copse/config.json`
 
 ```json
 {
@@ -98,7 +98,7 @@ Project override: `.arbor/config.json`
   "language": "en",
   "packageManager": "auto",
   "copyExcludes": true,
-  "worktreeDir": "~/arbor/{repo}"
+  "worktreeDir": "~/copse/{repo}"
 }
 ```
 
@@ -108,7 +108,7 @@ Project override: `.arbor/config.json`
 | `language`       | `"en"`, `"ko"`, `"ja"`                | `"en"`              | UI language                    |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            | Package manager for `install`  |
 | `copyExcludes`   | `true`, `false`                       | `true`              | Copy `.git/info/exclude` files |
-| `worktreeDir`    | string                                | `"~/arbor/{repo}"`  | Worktree parent directory      |
+| `worktreeDir`    | string                                | `"~/copse/{repo}"`  | Worktree parent directory      |
 
 Project-level config overrides global settings.
 

@@ -67,8 +67,8 @@ describe("loadConfig", () => {
   it("should merge project config over global config", async () => {
     // Given: global sets runtime=bun, project sets runtime=node
     const home = process.env.HOME ?? "/tmp";
-    const globalPath = `${home}/.arbor/config.json`;
-    const projectPath = "/project/.arbor/config.json";
+    const globalPath = `${home}/.copse/config.json`;
+    const projectPath = "/project/.copse/config.json";
 
     const files: Record<string, string> = {
       [globalPath]: JSON.stringify({ runtime: "bun", language: "ko" }),
@@ -89,7 +89,7 @@ describe("loadConfig", () => {
   it("should handle malformed config files gracefully", async () => {
     // Given: a global config with invalid JSON
     const home = process.env.HOME ?? "/tmp";
-    const globalPath = `${home}/.arbor/config.json`;
+    const globalPath = `${home}/.copse/config.json`;
 
     const files: Record<string, string> = {
       [globalPath]: "not valid json{{{",
