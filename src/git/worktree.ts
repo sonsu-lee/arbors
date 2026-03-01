@@ -53,6 +53,11 @@ export const listWorktrees = async (adapter: RuntimeAdapter, branchPrefix: strin
     .filter((wt): wt is WorktreeInfo => wt !== null);
 };
 
+export const branchExists = async (adapter: RuntimeAdapter, branchName: string): Promise<boolean> => {
+  const result = await adapter.exec("git", ["rev-parse", "--verify", branchName]);
+  return result.exitCode === 0;
+};
+
 export const createWorktree = async (
   adapter: RuntimeAdapter,
   name: string,
@@ -64,6 +69,10 @@ export const createWorktree = async (
   const base = baseBranch ?? (await getDefaultBranch(adapter));
   const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, name);
   const branchName = `${branchPrefix}/${name}`;
+
+  if (await branchExists(adapter, branchName)) {
+    throw new Error(`Branch '${branchName}' already exists`);
+  }
 
   const result = await adapter.exec("git", [
     "worktree",
