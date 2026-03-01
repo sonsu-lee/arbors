@@ -95,7 +95,8 @@ Project override: `.arbor/config.json`
   "language": "en",
   "packageManager": "auto",
   "copyExcludes": true,
-  "worktreeDir": "../{repo}-arbor"
+  "worktreeDir": "../{repo}-arbor",
+  "branchPrefix": "arbor"
 }
 ```
 
@@ -106,6 +107,7 @@ Project override: `.arbor/config.json`
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            | Package manager for `install`  |
 | `copyExcludes`   | `true`, `false`                       | `true`              | Copy `.git/info/exclude` files |
 | `worktreeDir`    | string                                | `"../{repo}-arbor"` | Worktree parent directory      |
+| `branchPrefix`   | string (min 1 char)                   | `"arbor"`           | Branch name prefix             |
 
 Project-level config overrides global settings.
 

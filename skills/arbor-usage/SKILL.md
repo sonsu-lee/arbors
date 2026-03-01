@@ -11,7 +11,7 @@ arbor is a CLI/TUI tool for managing git worktrees. It handles worktree creation
 
 ```sh
 arbor                              # Launch interactive TUI (fuzzy search)
-arbor add <name> [--base <branch>] # Create worktree → branch arbor/<name>
+arbor add <name> [--base <branch>] # Create worktree → branch {prefix}/<name>
 arbor remove <name>                # Remove worktree (safety checks first)
 arbor list [--plain]               # List arbor-managed worktrees
 arbor excluded                     # Show .git/info/exclude patterns
@@ -41,18 +41,20 @@ source /path/to/arbor/shell/arbor-wrapper.sh
 ## How `arbor add` Works
 
 1. Validate name against `/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/` (no `..` allowed)
-2. Run `git worktree add -b arbor/<name> ../{repo}-arbor/<name> <base>`
-3. Copy files matching `.git/info/exclude` patterns to the new worktree (if `copyExcludes: true`)
-4. Detect runtime manager (mise.toml → `mise install`, .nvmrc → `nvm install`)
-5. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
-6. Register the project in `~/.arbor/db.json` with timestamp
+2. Check if branch `{branchPrefix}/<name>` already exists — error if so
+3. Run `git worktree add -b {branchPrefix}/<name> ../{repo}-arbor/<name> <base>`
+4. Copy files matching `.git/info/exclude` patterns to the new worktree (if `copyExcludes: true`)
+5. Detect runtime manager (mise.toml → `mise install`, .nvmrc → `nvm install`)
+6. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
+7. Register the project in `~/.arbor/db.json` with timestamp
 
 ## Safety
 
 - `arbor remove` refuses to delete worktrees with uncommitted changes (`git status --porcelain`)
 - Cannot remove the main worktree
 - Name validation prevents path traversal and unsafe characters
-- Branch deletion (`git branch -D arbor/<name>`) happens after worktree removal
+- Branch deletion (`git branch -D {branchPrefix}/<name>`) happens after worktree removal
+- Branch existence is checked before creation to prevent overwriting
 
 ## Configuration
 
@@ -65,6 +67,7 @@ Global: `~/.arbor/config.json` — Project override: `.arbor/config.json` (in re
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
 | `copyExcludes`   | `true`, `false`                        | `true`              |
 | `worktreeDir`    | string with `{repo}` placeholder       | `"../{repo}-arbor"` |
+| `branchPrefix`   | string (min 1 char)                    | `"arbor"`           |
 
 ## Data Files
 
