@@ -94,10 +94,18 @@ export const createWorktree = async (
   return worktreePath;
 };
 
+export interface CheckoutResult {
+  path: string;
+  created: boolean;
+}
+
 export const checkoutWorktree = async (
   adapter: RuntimeAdapter,
   branch: string,
-): Promise<string> => {
+): Promise<CheckoutResult> => {
+  const existing = (await listWorktrees(adapter)).find((wt) => wt.branch === branch);
+  if (existing) return { path: existing.path, created: false };
+
   const repoName = await getRepoName(adapter);
   const repoRoot = await getRepoRoot(adapter);
   const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, branchToDir(branch));
@@ -108,13 +116,16 @@ export const checkoutWorktree = async (
     throw new Error(result.stderr || "Failed to checkout worktree");
   }
 
-  return worktreePath;
+  return { path: worktreePath, created: true };
 };
 
 export const checkoutRemoteWorktree = async (
   adapter: RuntimeAdapter,
   branch: string,
-): Promise<string> => {
+): Promise<CheckoutResult> => {
+  const existing = (await listWorktrees(adapter)).find((wt) => wt.branch === branch);
+  if (existing) return { path: existing.path, created: false };
+
   await adapter.exec("git", ["fetch", "origin", branch]);
 
   const repoName = await getRepoName(adapter);
@@ -134,7 +145,7 @@ export const checkoutRemoteWorktree = async (
     throw new Error(result.stderr || "Failed to checkout remote worktree");
   }
 
-  return worktreePath;
+  return { path: worktreePath, created: true };
 };
 
 export const removeWorktree = async (
