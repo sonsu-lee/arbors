@@ -11,8 +11,8 @@ copse is a CLI/TUI tool for managing git worktrees. It handles worktree creation
 
 ```sh
 copse                                  # Launch interactive TUI (fuzzy search)
-copse new <branch> [--base <base>]     # Create new branch + worktree
 copse add <branch>                     # Checkout existing branch (local → remote auto)
+copse add -c <branch> [--base <base>]  # Create new branch + worktree
 copse remove <branch>                  # Remove worktree (safety checks first)
 copse list [--plain]                   # List copse-managed worktrees
 copse excluded                         # Show .git/info/exclude patterns
@@ -39,7 +39,13 @@ source /path/to/copse/shell/copse-wrapper.zsh
 source /path/to/copse/shell/copse-wrapper.sh
 ```
 
-## How `copse new` Works
+## How `copse add` Works
+
+The `add` command handles both new and existing branches via the `-c` flag:
+
+### With `-c` (create new branch)
+
+`copse add -c <branch> [--base <base>]`
 
 1. Validate branch name against `/^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/` (slashes allowed, no `..`)
 2. Check if branch already exists — error if so
@@ -49,15 +55,15 @@ source /path/to/copse/shell/copse-wrapper.sh
 6. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
 7. Register in `~/.copse/db.json` (project + worktree tracking)
 
-## How `copse add` Works
+### Without `-c` (checkout existing branch)
 
-Smart checkout — tries local first, then remote:
+`copse add <branch>`
 
 1. Validate branch name
 2. If local branch exists → `git worktree add ~/copse/{repo}/<dir> <branch>`
 3. Else if remote branch exists → `git fetch origin <branch>`, then create worktree from `origin/<branch>`
-4. Else → error with hint to use `copse new`
-5. Copy excluded files, install deps, register in db (same as `copse new`)
+4. Else → error with hint to use `copse add -c`
+5. Copy excluded files, install deps, register in db (same as above)
 
 ## Safety
 

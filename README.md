@@ -31,7 +31,7 @@ source /path/to/copse/shell/copse-wrapper.sh
 
 ```sh
 # Create a new branch + worktree based on main
-copse new feature/login --base main
+copse add -c feature/login --base main
 
 # This automatically:
 #   1. git fetch origin main
@@ -71,8 +71,8 @@ copse remove feature/payment
 ### Working on multiple branches at once
 
 ```sh
-copse new feature/auth --base main
-copse new fix/header-bug --base main
+copse add -c feature/auth --base main
+copse add -c fix/header-bug --base main
 
 copse list
 # feature/auth    ~/copse/my-project/feature-auth
@@ -84,8 +84,8 @@ copse list
 ## Commands
 
 ```
-copse new <branch> [--base <branch>]   Create new branch + worktree
 copse add <branch>                     Checkout existing branch (local → remote auto)
+copse add -c <branch> [--base <branch>]  Create new branch + worktree
 copse remove <branch>                  Remove worktree (with safety checks)
 copse list [--plain]                   List managed worktrees
 copse excluded                         Show exclude patterns

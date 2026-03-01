@@ -31,7 +31,7 @@ source /path/to/copse/shell/copse-wrapper.sh
 
 ```sh
 # main 기준으로 새 브랜치 + worktree 생성
-copse new feature/login --base main
+copse add -c feature/login --base main
 
 # 자동으로 다음을 수행:
 #   1. git fetch origin main
@@ -71,8 +71,8 @@ copse remove feature/payment
 ### 동시에 여러 브랜치 작업
 
 ```sh
-copse new feature/auth --base main
-copse new fix/header-bug --base main
+copse add -c feature/auth --base main
+copse add -c fix/header-bug --base main
 
 copse list
 # feature/auth    ~/copse/my-project/feature-auth
@@ -84,8 +84,8 @@ copse list
 ## Commands
 
 ```
-copse new <branch> [--base <branch>]   새 브랜치 + worktree 생성
 copse add <branch>                     기존 브랜치 체크아웃 (로컬 → 원격 자동)
+copse add -c <branch> [--base <branch>]  새 브랜치 + worktree 생성
 copse remove <branch>                  worktree 삭제 (안전 검사 포함)
 copse list [--plain]                   관리 중인 worktree 목록
 copse excluded                         exclude 패턴 확인

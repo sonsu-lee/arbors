@@ -31,7 +31,7 @@ source /path/to/copse/shell/copse-wrapper.sh
 
 ```sh
 # mainを基準に新しいブランチ + worktreeを作成
-copse new feature/login --base main
+copse add -c feature/login --base main
 
 # 自動で以下を実行:
 #   1. git fetch origin main
@@ -71,8 +71,8 @@ copse remove feature/payment
 ### 複数ブランチの同時作業
 
 ```sh
-copse new feature/auth --base main
-copse new fix/header-bug --base main
+copse add -c feature/auth --base main
+copse add -c fix/header-bug --base main
 
 copse list
 # feature/auth    ~/copse/my-project/feature-auth
@@ -84,8 +84,8 @@ copse list
 ## Commands
 
 ```
-copse new <branch> [--base <branch>]   新しいブランチ + worktree作成
 copse add <branch>                     既存ブランチをチェックアウト（ローカル → リモート自動）
+copse add -c <branch> [--base <branch>]  新しいブランチ + worktree作成
 copse remove <branch>                  worktree削除（安全チェック付き）
 copse list [--plain]                   管理中のworktree一覧
 copse excluded                         excludeパターン確認

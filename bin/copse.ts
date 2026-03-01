@@ -27,6 +27,7 @@ const parseArgs = (argv: string[]) => {
       acc[arg.slice(2)] = args[i + 1];
     }
     if (arg === "--plain") acc.plain = "true";
+    if (arg === "--create" || arg === "-c") acc.create = "true";
     if (arg === "--help" || arg === "-h") acc.help = "true";
     if (arg === "--version" || arg === "-v") acc.version = "true";
     return acc;
@@ -41,8 +42,8 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log(chalk.white(msg.usage));
   console.log();
   console.log(chalk.white(msg.commands));
-  console.log("  new <branch> [--base <branch>]  Create a new branch worktree");
   console.log("  add <branch>                    Checkout existing branch (local or remote)");
+  console.log("  add -c <branch> [--base <br>]   Create a new branch worktree");
   console.log("  remove <branch>                 Remove a worktree");
   console.log("  list                            List worktrees");
   console.log("  excluded                        Show exclude patterns");
@@ -86,62 +87,9 @@ const main = async () => {
   }
 
   switch (command) {
-    case "new": {
-      if (!name) {
-        console.error(chalk.red("✗ Usage: copse new <branch> [--base <branch>]"));
-        process.exitCode = 1;
-        return;
-      }
-      if (!validateWorktreeName(name)) {
-        console.error(chalk.red(`✗ ${msg.invalidName}`));
-        process.exitCode = 1;
-        return;
-      }
-
-      console.log();
-      console.log(chalk.cyan.bold("copse new"));
-      console.log();
-
-      console.log(chalk.gray(msg.creating));
-      const newWorktreePath = await createWorktree(adapter, name, config.worktreeDir, flags.base);
-      console.log(chalk.green(`✓ ${msg.created}: ${newWorktreePath}`));
-      console.log(chalk.gray(`  Branch: ${name} (from ${flags.base ?? "default"})`));
-
-      try {
-        if (config.copyExcludes) {
-          console.log();
-          console.log(chalk.gray(msg.copying));
-          const copied = await copyExcludedFiles(adapter, newWorktreePath, config.copySkip);
-          console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
-        }
-
-        console.log();
-        console.log(chalk.gray(msg.installing));
-        await runSetup(adapter, newWorktreePath, config.packageManager);
-        console.log(chalk.green(`✓ ${msg.installed}`));
-
-        const newRepoRoot = await getRepoRoot(adapter);
-        await registerProject(adapter, name, newRepoRoot);
-        await registerWorktree(adapter, newWorktreePath, name, newRepoRoot);
-      } catch (setupErr) {
-        console.error(chalk.red(`✗ ${(setupErr as Error).message}`));
-        console.log(chalk.gray("Rolling back worktree..."));
-        await adapter
-          .exec("git", ["worktree", "remove", "--force", newWorktreePath])
-          .catch(() => {});
-        await adapter.exec("git", ["branch", "-D", name]).catch(() => {});
-        process.exitCode = 1;
-        return;
-      }
-
-      console.log();
-      console.log(chalk.gray(`  cd ${newWorktreePath}`));
-      break;
-    }
-
     case "add": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: copse add <branch>"));
+        console.error(chalk.red("✗ Usage: copse add [-c] <branch> [--base <branch>]"));
         process.exitCode = 1;
         return;
       }
@@ -155,26 +103,35 @@ const main = async () => {
       console.log(chalk.cyan.bold("copse add"));
       console.log();
 
-      let addWorktreePath: string;
+      let worktreePath: string;
       let created = false;
+      let newBranch = false;
 
-      if (await branchExists(adapter, name)) {
+      if (flags.create) {
+        // copse add -c <branch> [--base main]
+        console.log(chalk.gray(msg.creating));
+        worktreePath = await createWorktree(adapter, name, config.worktreeDir, flags.base);
+        created = true;
+        newBranch = true;
+        console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
+        console.log(chalk.gray(`  Branch: ${name} (from ${flags.base ?? "default"})`));
+      } else if (await branchExists(adapter, name)) {
         console.log(chalk.gray(`Checking out ${name}...`));
         const result = await checkoutWorktree(adapter, name, config.worktreeDir);
-        addWorktreePath = result.path;
+        worktreePath = result.path;
         created = result.created;
-        console.log(chalk.green(`✓ ${msg.created}: ${addWorktreePath}`));
+        console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
         console.log(chalk.gray(`  Branch: ${name}`));
       } else if (await remoteBranchExists(adapter, name)) {
         console.log(chalk.gray(`Fetching ${name} from origin...`));
         const result = await checkoutRemoteWorktree(adapter, name, config.worktreeDir);
-        addWorktreePath = result.path;
+        worktreePath = result.path;
         created = result.created;
-        console.log(chalk.green(`✓ ${msg.created}: ${addWorktreePath}`));
+        console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
         console.log(chalk.gray(`  Branch: ${name} (from origin/${name})`));
       } else {
         console.error(
-          chalk.red(`✗ Branch '${name}' not found locally or on origin. Use 'copse new' to create.`),
+          chalk.red(`✗ Branch '${name}' not found locally or on origin. Use 'copse add -c' to create.`),
         );
         process.exitCode = 1;
         return;
@@ -184,32 +141,35 @@ const main = async () => {
         if (config.copyExcludes) {
           console.log();
           console.log(chalk.gray(msg.copying));
-          const copied = await copyExcludedFiles(adapter, addWorktreePath, config.copySkip);
+          const copied = await copyExcludedFiles(adapter, worktreePath, config.copySkip);
           console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
         }
 
         console.log();
         console.log(chalk.gray(msg.installing));
-        await runSetup(adapter, addWorktreePath, config.packageManager);
+        await runSetup(adapter, worktreePath, config.packageManager);
         console.log(chalk.green(`✓ ${msg.installed}`));
 
-        const addRepoRoot = await getRepoRoot(adapter);
-        await registerProject(adapter, name, addRepoRoot);
-        await registerWorktree(adapter, addWorktreePath, name, addRepoRoot);
+        const repoRoot = await getRepoRoot(adapter);
+        await registerProject(adapter, name, repoRoot);
+        await registerWorktree(adapter, worktreePath, name, repoRoot);
       } catch (setupErr) {
         console.error(chalk.red(`✗ ${(setupErr as Error).message}`));
         if (created) {
           console.log(chalk.gray("Rolling back worktree..."));
           await adapter
-            .exec("git", ["worktree", "remove", "--force", addWorktreePath])
+            .exec("git", ["worktree", "remove", "--force", worktreePath])
             .catch(() => {});
+          if (newBranch) {
+            await adapter.exec("git", ["branch", "-D", name]).catch(() => {});
+          }
         }
         process.exitCode = 1;
         return;
       }
 
       console.log();
-      console.log(chalk.gray(`  cd ${addWorktreePath}`));
+      console.log(chalk.gray(`  cd ${worktreePath}`));
       break;
     }
 
