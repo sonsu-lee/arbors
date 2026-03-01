@@ -20,10 +20,9 @@ import { createAdapter } from "../src/runtime/index.js";
 const parseArgs = (argv: string[]) => {
   const args = argv.slice(2);
   const command = args[0];
-  const name = args[1];
 
   const flags = args.reduce<Record<string, string>>((acc, arg, i) => {
-    if (arg.startsWith("--") && args[i + 1] && !args[i + 1].startsWith("--")) {
+    if (arg.startsWith("--") && args[i + 1] && !args[i + 1].startsWith("-")) {
       acc[arg.slice(2)] = args[i + 1];
     }
     if (arg === "--plain") acc.plain = "true";
@@ -32,6 +31,8 @@ const parseArgs = (argv: string[]) => {
     if (arg === "--version" || arg === "-v") acc.version = "true";
     return acc;
   }, {});
+
+  const name = args.slice(1).find((a) => !a.startsWith("-"));
 
   return { command, name, flags };
 };
@@ -47,7 +48,7 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  remove <branch>                 Remove a worktree");
   console.log("  list                            List worktrees");
   console.log("  excluded                        Show exclude patterns");
-  console.log("  config [--runtime|--lang]       Show or set config");
+  console.log("  config                          Show current config");
   console.log();
   console.log(chalk.white(msg.options));
   console.log("  --plain                       Machine-readable output");
@@ -127,6 +128,7 @@ const main = async () => {
         const result = await checkoutRemoteWorktree(adapter, name, config.worktreeDir);
         worktreePath = result.path;
         created = result.created;
+        newBranch = result.created;
         console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
         console.log(chalk.gray(`  Branch: ${name} (from origin/${name})`));
       } else {

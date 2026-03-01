@@ -10,7 +10,6 @@ copse is a CLI/TUI tool for managing git worktrees. It handles worktree creation
 ## Quick Reference
 
 ```sh
-copse                                  # Launch interactive TUI (fuzzy search)
 copse add <branch>                     # Checkout existing branch (local → remote auto)
 copse add -c <branch> [--base <base>]  # Create new branch + worktree
 copse remove <branch>                  # Remove worktree (safety checks first)
@@ -29,7 +28,7 @@ pnpm install && pnpm build
 npm link
 ```
 
-Shell integration is required for auto-cd after worktree selection — without it, TUI selection works but the shell stays in the current directory. A child process (node) cannot change the parent shell's cwd, so the wrapper script captures copse's `__COPSE_CD__:<path>` protocol output and runs `cd` in the parent shell.
+Shell integration is required for auto-cd — a child process (node) cannot change the parent shell's cwd, so the wrapper script captures copse's `__COPSE_CD__:<path>` protocol output and runs `cd` in the parent shell.
 
 ```sh
 # ~/.zshrc
@@ -83,6 +82,7 @@ Global: `~/.copse/config.json` — Project override: `.copse/config.json` (in re
 | `language`       | `"en"`, `"ko"`, `"ja"`                 | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
 | `copyExcludes`   | `true`, `false`                        | `true`              |
+| `copySkip`       | `string[]`                             | `["node_modules"]`  |
 | `worktreeDir`    | string with `{repo}` placeholder       | `"~/copse/{repo}"`  |
 
 ## Data Files
