@@ -22,8 +22,11 @@ export const findExcludedFiles = async (
 ): Promise<string[]> => {
   const repoRoot = await getRepoRoot(adapter);
 
+  const cleaned = patterns.map((p) => p.replace(/^\//, ""));
+  const expanded = cleaned.flatMap((p) => [p, `${p}/**`]);
+
   const fileGroups = await Promise.all(
-    patterns.map((p) => p.replace(/^\//, "")).map((pattern) => adapter.glob(pattern, repoRoot)),
+    expanded.map((pattern) => adapter.glob(pattern, repoRoot)),
   );
 
   return [...new Set(fileGroups.flat())].sort();
@@ -39,14 +42,21 @@ export const copyExcludedFiles = async (
   const repoRoot = await getRepoRoot(adapter);
   const files = await findExcludedFiles(adapter, patterns);
 
+  const copied: string[] = [];
+
   await Promise.all(
     files.map(async (file) => {
       const src = join(repoRoot, file);
       const dest = join(worktreePath, file);
-      await adapter.mkdir(dirname(dest));
-      await adapter.copyFile(src, dest);
+      try {
+        await adapter.mkdir(dirname(dest));
+        await adapter.copyFile(src, dest);
+        copied.push(file);
+      } catch {
+        // Skip non-copyable files (sockets, pipes, etc.)
+      }
     }),
   );
 
-  return files;
+  return copied;
 };
