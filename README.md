@@ -1,4 +1,4 @@
-# copse
+# arbors
 
 [한국어](./README.ko.md) | [日本語](./README.ja.md)
 
@@ -9,8 +9,8 @@ Create a separate directory for each branch and work on multiple branches simult
 ## Install
 
 ```sh
-git clone git@github.com:sungsulee/copse.git
-cd copse
+git clone git@github.com:sungsulee/arbors.git
+cd arbors
 pnpm install && pnpm build
 npm link
 ```
@@ -19,10 +19,10 @@ Shell integration (auto `cd` after worktree selection):
 
 ```sh
 # ~/.zshrc
-source /path/to/copse/shell/copse-wrapper.zsh
+source /path/to/arbors/shell/arbors-wrapper.zsh
 
 # ~/.bashrc
-source /path/to/copse/shell/copse-wrapper.sh
+source /path/to/arbors/shell/arbors-wrapper.sh
 ```
 
 ## Workflows
@@ -31,22 +31,22 @@ source /path/to/copse/shell/copse-wrapper.sh
 
 ```sh
 # Create a new branch + worktree based on main
-copse add -c feature/login --base main
+arbors add -c feature/login --base main
 
 # This automatically:
 #   1. git fetch origin main
-#   2. Creates worktree at ~/copse/{repo}/feature-login
+#   2. Creates worktree at ~/arbors/{repo}/feature-login
 #   3. Copies files listed in .git/info/exclude (.env, etc.)
 #   4. Runs pnpm install (auto-detects from lockfile)
 
-cd ~/copse/my-project/feature-login
+cd ~/arbors/my-project/feature-login
 # Start working
 ```
 
 When done:
 
 ```sh
-copse remove feature/login
+arbors remove feature/login
 # Refuses to delete if there are uncommitted changes
 ```
 
@@ -56,7 +56,7 @@ Check out a remote branch as a local worktree:
 
 ```sh
 # Automatically fetches from origin and creates worktree
-copse add feature/payment
+arbors add feature/payment
 
 # If the branch already exists locally, just creates the worktree
 # → Tries local first, falls back to origin
@@ -65,18 +65,18 @@ copse add feature/payment
 When review is done:
 
 ```sh
-copse remove feature/payment
+arbors remove feature/payment
 ```
 
 ### Working on multiple branches at once
 
 ```sh
-copse add -c feature/auth --base main
-copse add -c fix/header-bug --base main
+arbors add -c feature/auth --base main
+arbors add -c fix/header-bug --base main
 
-copse list
-# feature/auth    ~/copse/my-project/feature-auth
-# fix/header-bug  ~/copse/my-project/fix-header-bug
+arbors list
+# feature/auth    ~/arbors/my-project/feature-auth
+# fix/header-bug  ~/arbors/my-project/fix-header-bug
 
 # Work independently in each directory. No stashing needed.
 ```
@@ -84,17 +84,17 @@ copse list
 ## Commands
 
 ```
-copse add <branch>                     Checkout existing branch (local → remote auto)
-copse add -c <branch> [--base <branch>]  Create new branch + worktree
-copse remove <branch>                  Remove worktree (with safety checks)
-copse list [--plain]                   List managed worktrees
-copse excluded                         Show exclude patterns
-copse config                           Show current config
+arbors add <branch>                     Checkout existing branch (local → remote auto)
+arbors add -c <branch> [--base <branch>]  Create new branch + worktree
+arbors remove <branch>                  Remove worktree (with safety checks)
+arbors list [--plain]                   List managed worktrees
+arbors excluded                         Show exclude patterns
+arbors config                           Show current config
 ```
 
 ## Configuration
 
-`~/.copse/config.json` (global) or `.copse/config.json` (per-project, takes precedence):
+`~/.arbors/config.json` (global) or `.arbors/config.json` (per-project, takes precedence):
 
 ```json
 {
@@ -103,7 +103,7 @@ copse config                           Show current config
   "packageManager": "auto",
   "copyExcludes": true,
   "copySkip": ["node_modules"],
-  "worktreeDir": "~/copse/{repo}"
+  "worktreeDir": "~/arbors/{repo}"
 }
 ```
 
@@ -114,7 +114,7 @@ copse config                           Show current config
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
 | `copyExcludes`   | `true`, `false`                       | `true`              |
 | `copySkip`       | `string[]`                            | `["node_modules"]`  |
-| `worktreeDir`    | string (`{repo}` placeholder)         | `"~/copse/{repo}"`  |
+| `worktreeDir`    | string (`{repo}` placeholder)         | `"~/arbors/{repo}"` |
 
 ## Development
 

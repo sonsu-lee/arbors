@@ -2,7 +2,7 @@ import type { Messages } from "./en.js";
 
 export const ko: Messages = {
   selectProject: "프로젝트를 선택하세요:",
-  noProjects: "등록된 프로젝트가 없습니다. git 저장소에서 copse를 먼저 실행하세요.",
+  noProjects: "등록된 프로젝트가 없습니다. git 저장소에서 arbors를 먼저 실행하세요.",
   recentProjects: "최근 프로젝트",
 
   selectWorktree: "워크트리를 선택하세요:",
@@ -33,8 +33,8 @@ export const ko: Messages = {
   configSaved: "설정이 저장되었습니다.",
   configCurrent: "현재 설정:",
 
-  version: "copse v0.1.0",
-  usage: "사용법: copse [명령어] [옵션]",
+  version: "arbors v0.1.0",
+  usage: "사용법: arbors [명령어] [옵션]",
   commands: "명령어:",
   options: "옵션:",
 } as const;

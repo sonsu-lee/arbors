@@ -50,7 +50,7 @@ export const App: React.FC<AppProps> = ({ adapter, messages, projects, listWorkt
   useEffect(() => {
     if (resultMessage) {
       // Print the selected path for shell wrapper to capture
-      console.log(`__COPSE_CD__:${resultMessage}`);
+      console.log(`__ARBORS_CD__:${resultMessage}`);
       exit();
     }
   }, [resultMessage, exit]);
