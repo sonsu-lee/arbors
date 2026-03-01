@@ -38,7 +38,10 @@ export const copyExcludedFiles = async (
   if (patterns.length === 0) return [];
 
   const repoRoot = await getRepoRoot(adapter);
-  const entries = await findExcludedEntries(adapter, patterns);
+  const allEntries = await findExcludedEntries(adapter, patterns);
+  const entries = allEntries.filter(
+    (e) => e !== "node_modules" && !e.startsWith("node_modules/"),
+  );
 
   const copied: string[] = [];
 
