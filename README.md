@@ -1,96 +1,100 @@
 # copse
 
-A git worktree manager. Fuzzy-search your projects, create and switch worktrees, auto-copy excluded files and install dependencies.
+[한국어](./README.ko.md) | [日本語](./README.ja.md)
 
-## Features
+A CLI tool for managing git worktrees.
 
-- Interactive TUI with fuzzy search for project and worktree selection
-- CLI mode for scripting and automation
-- Automatic `.git/info/exclude` file copying to new worktrees
-- Project registry with recent history tracking
-- Package manager auto-detection (pnpm, yarn, npm)
-- Runtime manager detection (mise, nvm)
-- Configurable Bun/Node runtime
-- Shell integration for automatic `cd` into worktrees
-- i18n support (English, Korean, Japanese)
-- Refuses to delete worktrees with uncommitted changes or the main worktree
+Create a separate directory for each branch and work on multiple branches simultaneously — no stash or switch needed. Automatically copies exclude files and installs dependencies when creating worktrees.
 
 ## Install
 
 ```sh
-git clone git@github.com:<your-username>/copse.git
+git clone git@github.com:sungsulee/copse.git
 cd copse
-pnpm install
-pnpm build
-```
-
-### Global access
-
-Option A: npm link
-
-```sh
+pnpm install && pnpm build
 npm link
 ```
 
-Option B: shell alias (no link needed)
+Shell integration (auto `cd` after worktree selection):
 
 ```sh
-# ~/.zshrc or ~/.bashrc
-alias copse="node ~/path/to/copse/dist/copse.js"
+# ~/.zshrc
+source /path/to/copse/shell/copse-wrapper.zsh
+
+# ~/.bashrc
+source /path/to/copse/shell/copse-wrapper.sh
 ```
 
-### Update
+## Workflows
+
+### New feature development
 
 ```sh
-git pull
-pnpm install
-pnpm build
-```
-
-## Usage
-
-### CLI
-
-```sh
-# Create a new branch worktree (from main)
+# Create a new branch + worktree based on main
 copse new feature/login --base main
 
-# Checkout an existing branch (auto-detects local or remote)
-copse add feature/login
+# This automatically:
+#   1. git fetch origin main
+#   2. Creates worktree at ~/copse/{repo}/feature-login
+#   3. Copies files listed in .git/info/exclude (.env, etc.)
+#   4. Runs pnpm install (auto-detects from lockfile)
 
-# List worktrees
-copse list
-
-# Remove a worktree (with safety checks)
-copse remove feature/login
-
-# Show exclude patterns
-copse excluded
-
-# Show current config
-copse config
+cd ~/copse/my-project/feature-login
+# Start working
 ```
 
-### Interactive TUI
-
-Run `copse` with no arguments to launch the TUI. Type to filter, arrow keys to navigate, Enter to select.
-
-### Shell Integration
-
-Add to your shell config for automatic `cd` after worktree selection:
+When done:
 
 ```sh
-# bash (~/.bashrc)
-source /path/to/copse/shell/copse-wrapper.sh
+copse remove feature/login
+# Refuses to delete if there are uncommitted changes
+```
 
-# zsh (~/.zshrc)
-source /path/to/copse/shell/copse-wrapper.zsh
+### Code reviewing a colleague's PR
+
+Check out a remote branch as a local worktree:
+
+```sh
+# Automatically fetches from origin and creates worktree
+copse add feature/payment
+
+# If the branch already exists locally, just creates the worktree
+# → Tries local first, falls back to origin
+```
+
+When review is done:
+
+```sh
+copse remove feature/payment
+```
+
+### Working on multiple branches at once
+
+```sh
+copse new feature/auth --base main
+copse new fix/header-bug --base main
+
+copse list
+# feature/auth    ~/copse/my-project/feature-auth
+# fix/header-bug  ~/copse/my-project/fix-header-bug
+
+# Work independently in each directory. No stashing needed.
+```
+
+## Commands
+
+```
+copse new <branch> [--base <branch>]   Create new branch + worktree
+copse add <branch>                     Checkout existing branch (local → remote auto)
+copse remove <branch>                  Remove worktree (with safety checks)
+copse list [--plain]                   List managed worktrees
+copse excluded                         Show exclude patterns
+copse config                           Show current config
 ```
 
 ## Configuration
 
-Global config: `~/.copse/config.json`
-Project override: `.copse/config.json`
+`~/.copse/config.json` (global) or `.copse/config.json` (per-project, takes precedence):
 
 ```json
 {
@@ -98,27 +102,28 @@ Project override: `.copse/config.json`
   "language": "en",
   "packageManager": "auto",
   "copyExcludes": true,
+  "copySkip": ["node_modules"],
   "worktreeDir": "~/copse/{repo}"
 }
 ```
 
-| Key              | Values                                | Default             | Description                    |
-| ---------------- | ------------------------------------- | ------------------- | ------------------------------ |
-| `runtime`        | `"node"`, `"bun"`                     | `"node"`            | Runtime for shell commands     |
-| `language`       | `"en"`, `"ko"`, `"ja"`                | `"en"`              | UI language                    |
-| `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            | Package manager for `install`  |
-| `copyExcludes`   | `true`, `false`                       | `true`              | Copy `.git/info/exclude` files |
-| `worktreeDir`    | string                                | `"~/copse/{repo}"`  | Worktree parent directory      |
-
-Project-level config overrides global settings.
+| Key              | Values                                | Default             |
+| ---------------- | ------------------------------------- | ------------------- |
+| `runtime`        | `"node"`, `"bun"`                     | `"node"`            |
+| `language`       | `"en"`, `"ko"`, `"ja"`               | `"en"`              |
+| `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
+| `copyExcludes`   | `true`, `false`                       | `true`              |
+| `copySkip`       | `string[]`                            | `["node_modules"]`  |
+| `worktreeDir`    | string (`{repo}` placeholder)         | `"~/copse/{repo}"`  |
 
 ## Development
 
 ```sh
-pnpm test      # Run tests
-pnpm lint      # Lint with oxlint
-pnpm format    # Format with oxfmt
-pnpm build     # Build with tsup
+pnpm test       # vitest
+pnpm lint       # oxlint
+pnpm format     # oxfmt
+pnpm build      # tsup
+pnpm typecheck  # tsc --noEmit
 ```
 
 ## License
