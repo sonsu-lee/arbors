@@ -103,7 +103,7 @@ const main = async () => {
       console.log();
 
       console.log(chalk.gray(msg.creating));
-      const newWorktreePath = await createWorktree(adapter, name, flags.base);
+      const newWorktreePath = await createWorktree(adapter, name, config.worktreeDir, flags.base);
       console.log(chalk.green(`✓ ${msg.created}: ${newWorktreePath}`));
       console.log(chalk.gray(`  Branch: ${name} (from ${flags.base ?? "default"})`));
 
@@ -160,14 +160,14 @@ const main = async () => {
 
       if (await branchExists(adapter, name)) {
         console.log(chalk.gray(`Checking out ${name}...`));
-        const result = await checkoutWorktree(adapter, name);
+        const result = await checkoutWorktree(adapter, name, config.worktreeDir);
         addWorktreePath = result.path;
         created = result.created;
         console.log(chalk.green(`✓ ${msg.created}: ${addWorktreePath}`));
         console.log(chalk.gray(`  Branch: ${name}`));
       } else if (await remoteBranchExists(adapter, name)) {
         console.log(chalk.gray(`Fetching ${name} from origin...`));
-        const result = await checkoutRemoteWorktree(adapter, name);
+        const result = await checkoutRemoteWorktree(adapter, name, config.worktreeDir);
         addWorktreePath = result.path;
         created = result.created;
         console.log(chalk.green(`✓ ${msg.created}: ${addWorktreePath}`));

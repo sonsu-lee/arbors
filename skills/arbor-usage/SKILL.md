@@ -43,7 +43,7 @@ source /path/to/arbor/shell/arbor-wrapper.sh
 
 1. Validate branch name against `/^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/` (slashes allowed, no `..`)
 2. Check if branch already exists — error if so
-3. Run `git worktree add -b <branch> ../{repo}-arbor/<dir> <base>` (dir = branch with `/` → `-`)
+3. Run `git fetch origin <base>` then `git worktree add -b <branch> ~/arbor/{repo}/<dir> origin/<base>` (dir = branch with `/` → `-`)
 4. Copy files matching `.git/info/exclude` patterns (if `copyExcludes: true`)
 5. Detect runtime manager (mise.toml → `mise install`, .nvmrc → `nvm install`)
 6. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
@@ -54,7 +54,7 @@ source /path/to/arbor/shell/arbor-wrapper.sh
 Smart checkout — tries local first, then remote:
 
 1. Validate branch name
-2. If local branch exists → `git worktree add ../{repo}-arbor/<dir> <branch>`
+2. If local branch exists → `git worktree add ~/arbor/{repo}/<dir> <branch>`
 3. Else if remote branch exists → `git fetch origin <branch>`, then create worktree from `origin/<branch>`
 4. Else → error with hint to use `arbor new`
 5. Copy excluded files, install deps, register in db (same as `arbor new`)
@@ -77,7 +77,7 @@ Global: `~/.arbor/config.json` — Project override: `.arbor/config.json` (in re
 | `language`       | `"en"`, `"ko"`, `"ja"`                 | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
 | `copyExcludes`   | `true`, `false`                        | `true`              |
-| `worktreeDir`    | string with `{repo}` placeholder       | `"../{repo}-arbor"` |
+| `worktreeDir`    | string with `{repo}` placeholder       | `"~/arbor/{repo}"`  |
 
 ## Data Files
 

@@ -14,7 +14,7 @@ const DEFAULT_CONFIG: ArborConfig = {
   language: "en",
   packageManager: "auto",
   copyExcludes: true,
-  worktreeDir: "../{repo}-arbor",
+  worktreeDir: "~/arbor/{repo}",
 } satisfies ArborConfig;
 
 const GLOBAL_CONFIG_PATH = join(homedir(), ".arbor", "config.json");

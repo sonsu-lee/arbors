@@ -1,4 +1,5 @@
-import { basename, dirname, resolve } from "node:path";
+import { homedir } from "node:os";
+import { basename, resolve } from "node:path";
 import type { RuntimeAdapter } from "../runtime/adapter.js";
 
 export interface WorktreeInfo {
@@ -64,15 +65,20 @@ export const remoteBranchExists = async (adapter: RuntimeAdapter, branchName: st
 
 const branchToDir = (branch: string): string => branch.replaceAll("/", "-");
 
+const resolveWorktreeDir = (worktreeDir: string, repoName: string): string => {
+  const expanded = worktreeDir.replace(/^~/, homedir()).replace("{repo}", repoName);
+  return resolve(expanded);
+};
+
 export const createWorktree = async (
   adapter: RuntimeAdapter,
   branch: string,
+  worktreeDir: string,
   baseBranch?: string,
 ): Promise<string> => {
   const repoName = await getRepoName(adapter);
-  const repoRoot = await getRepoRoot(adapter);
   const base = baseBranch ?? (await getDefaultBranch(adapter));
-  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, branchToDir(branch));
+  const worktreePath = resolve(resolveWorktreeDir(worktreeDir, repoName), branchToDir(branch));
 
   if (await branchExists(adapter, branch)) {
     throw new Error(`Branch '${branch}' already exists`);
@@ -104,13 +110,13 @@ export interface CheckoutResult {
 export const checkoutWorktree = async (
   adapter: RuntimeAdapter,
   branch: string,
+  worktreeDir: string,
 ): Promise<CheckoutResult> => {
   const existing = (await listWorktrees(adapter)).find((wt) => wt.branch === branch);
   if (existing) return { path: existing.path, created: false };
 
   const repoName = await getRepoName(adapter);
-  const repoRoot = await getRepoRoot(adapter);
-  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, branchToDir(branch));
+  const worktreePath = resolve(resolveWorktreeDir(worktreeDir, repoName), branchToDir(branch));
 
   const result = await adapter.exec("git", ["worktree", "add", worktreePath, branch]);
 
@@ -124,6 +130,7 @@ export const checkoutWorktree = async (
 export const checkoutRemoteWorktree = async (
   adapter: RuntimeAdapter,
   branch: string,
+  worktreeDir: string,
 ): Promise<CheckoutResult> => {
   const existing = (await listWorktrees(adapter)).find((wt) => wt.branch === branch);
   if (existing) return { path: existing.path, created: false };
@@ -131,8 +138,7 @@ export const checkoutRemoteWorktree = async (
   await adapter.exec("git", ["fetch", "origin", branch]);
 
   const repoName = await getRepoName(adapter);
-  const repoRoot = await getRepoRoot(adapter);
-  const worktreePath = resolve(dirname(repoRoot), `${repoName}-arbor`, branchToDir(branch));
+  const worktreePath = resolve(resolveWorktreeDir(worktreeDir, repoName), branchToDir(branch));
 
   const result = await adapter.exec("git", [
     "worktree",
