@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { loadConfig } from "../src/config.js";
 import { copyExcludedFiles, getExcludePatterns } from "../src/git/exclude.js";
 import { validateWorktreeName, canSafelyRemove } from "../src/git/safety.js";
@@ -26,18 +27,18 @@ const parseArgs = (argv: string[]) => {
 };
 
 const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
-  console.log(msg.version);
+  console.log(chalk.cyan.bold(msg.version));
   console.log();
-  console.log(msg.usage);
+  console.log(chalk.white(msg.usage));
   console.log();
-  console.log(msg.commands);
+  console.log(chalk.white(msg.commands));
   console.log("  add <name> [--base <branch>]  Create a new worktree");
   console.log("  remove <name>                 Remove a worktree");
   console.log("  list                          List worktrees");
   console.log("  excluded                      Show exclude patterns");
   console.log("  config [--runtime|--lang]     Show or set config");
   console.log();
-  console.log(msg.options);
+  console.log(chalk.white(msg.options));
   console.log("  --plain                       Machine-readable output");
   console.log("  -h, --help                    Show help");
   console.log("  -v, --version                 Show version");
@@ -77,43 +78,55 @@ const main = async () => {
   switch (command) {
     case "add": {
       if (!name) {
-        console.error("✗ Usage: arbor add <name> [--base <branch>]");
+        console.error(chalk.red("✗ Usage: arbor add <name> [--base <branch>]"));
         process.exitCode = 1;
         return;
       }
       if (!validateWorktreeName(name)) {
-        console.error(`✗ ${msg.invalidName}`);
+        console.error(chalk.red(`✗ ${msg.invalidName}`));
         process.exitCode = 1;
         return;
       }
 
-      console.log(msg.creating);
+      console.log();
+      console.log(chalk.cyan.bold("arbor add"));
+      console.log();
+
+      console.log(chalk.gray(msg.creating));
       const worktreePath = await createWorktree(adapter, name, config.branchPrefix, flags.base);
+      console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
+      console.log(chalk.gray(`  Branch: ${config.branchPrefix}/${name}`));
 
       if (config.copyExcludes) {
-        console.log(msg.copying);
+        console.log();
+        console.log(chalk.gray(msg.copying));
         const copied = await copyExcludedFiles(adapter, worktreePath);
-        console.log(`✓ ${msg.copied} (${copied.length} files)`);
+        console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
       }
 
-      console.log(msg.installing);
+      console.log();
+      console.log(chalk.gray(msg.installing));
       await runSetup(adapter, worktreePath, config.packageManager);
-      console.log(`✓ ${msg.installed}`);
+      console.log(chalk.green(`✓ ${msg.installed}`));
 
       const repoRoot = await getRepoRoot(adapter);
       await registerProject(adapter, name, repoRoot);
 
-      console.log(`✓ ${msg.created}: ${worktreePath}`);
-      console.log(`  cd ${worktreePath}`);
+      console.log();
+      console.log(chalk.gray(`  cd ${worktreePath}`));
       break;
     }
 
     case "remove": {
       if (!name) {
-        console.error("✗ Usage: arbor remove <name>");
+        console.error(chalk.red("✗ Usage: arbor remove <name>"));
         process.exitCode = 1;
         return;
       }
+
+      console.log();
+      console.log(chalk.cyan.bold("arbor remove"));
+      console.log();
 
       const repoRoot = await getRepoRoot(adapter);
       const { basename, dirname, resolve } = await import("node:path");
@@ -122,14 +135,14 @@ const main = async () => {
       const { safe, reason } = await canSafelyRemove(adapter, worktreePath, config.branchPrefix);
       if (!safe) {
         const errorMsg = reason ? msg[reason as keyof typeof msg] : "Cannot remove";
-        console.error(`✗ ${errorMsg}`);
+        console.error(chalk.red(`✗ ${errorMsg}`));
         process.exitCode = 1;
         return;
       }
 
-      console.log(msg.removing);
+      console.log(chalk.gray(msg.removing));
       await removeWorktree(adapter, name, config.branchPrefix);
-      console.log(`✓ ${msg.removed}: ${name}`);
+      console.log(chalk.green(`✓ ${msg.removed}: ${name}`));
       break;
     }
 
@@ -140,10 +153,15 @@ const main = async () => {
       if (flags.plain) {
         managedWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
       } else if (managedWorktrees.length === 0) {
-        console.log(msg.noWorktrees);
+        console.log(chalk.gray(msg.noWorktrees));
       } else {
+        console.log();
+        console.log(chalk.cyan.bold("arbor list"));
+        console.log();
         managedWorktrees.forEach((wt) => {
-          console.log(`  ${wt.branch.replace(`${config.branchPrefix}/`, "")} → ${wt.path}`);
+          const wtName = wt.branch.replace(`${config.branchPrefix}/`, "");
+          console.log(chalk.white(wtName));
+          console.log(chalk.gray(`  ${wt.path}`));
         });
       }
       break;
@@ -152,23 +170,28 @@ const main = async () => {
     case "excluded": {
       const patterns = await getExcludePatterns(adapter);
       if (patterns.length === 0) {
-        console.log("No exclude patterns found in .git/info/exclude");
+        console.log(chalk.gray("No exclude patterns found in .git/info/exclude"));
       } else {
+        console.log();
+        console.log(chalk.cyan.bold("arbor excluded"));
+        console.log();
         patterns.forEach((p) => console.log(`  ${p}`));
       }
       break;
     }
 
     case "config": {
-      console.log(msg.configCurrent);
+      console.log();
+      console.log(chalk.cyan.bold("arbor config"));
+      console.log();
       Object.entries(config).forEach(([key, value]) => {
-        console.log(`  ${key}: ${value}`);
+        console.log(`  ${chalk.white(key)}: ${chalk.gray(String(value))}`);
       });
       break;
     }
 
     default: {
-      console.error(`✗ Unknown command: ${command}`);
+      console.error(chalk.red(`✗ Unknown command: ${command}`));
       printHelp(msg);
       process.exitCode = 1;
     }
@@ -176,6 +199,6 @@ const main = async () => {
 };
 
 main().catch((err: Error) => {
-  console.error(`✗ ${err.message}`);
+  console.error(chalk.red(`✗ ${err.message}`));
   process.exitCode = 1;
 });
