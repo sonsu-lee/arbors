@@ -6,6 +6,7 @@ export interface ArborConfig {
   language: "ko" | "en" | "ja";
   packageManager: "auto" | "pnpm" | "yarn" | "npm";
   copyExcludes: boolean;
+  copySkip: string[];
   worktreeDir: string;
 }
 
@@ -14,6 +15,7 @@ const DEFAULT_CONFIG: ArborConfig = {
   language: "en",
   packageManager: "auto",
   copyExcludes: true,
+  copySkip: ["node_modules"],
   worktreeDir: "~/arbor/{repo}",
 } satisfies ArborConfig;
 

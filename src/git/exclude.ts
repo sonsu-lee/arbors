@@ -33,6 +33,7 @@ export const findExcludedEntries = async (
 export const copyExcludedFiles = async (
   adapter: RuntimeAdapter,
   worktreePath: string,
+  skipPatterns: string[] = [],
 ): Promise<string[]> => {
   const patterns = await getExcludePatterns(adapter);
   if (patterns.length === 0) return [];
@@ -40,7 +41,7 @@ export const copyExcludedFiles = async (
   const repoRoot = await getRepoRoot(adapter);
   const allEntries = await findExcludedEntries(adapter, patterns);
   const entries = allEntries.filter(
-    (e) => e !== "node_modules" && !e.startsWith("node_modules/"),
+    (e) => !skipPatterns.some((s) => e === s || e.startsWith(`${s}/`)),
   );
 
   const copied: string[] = [];

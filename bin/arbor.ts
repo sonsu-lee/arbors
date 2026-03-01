@@ -111,7 +111,7 @@ const main = async () => {
         if (config.copyExcludes) {
           console.log();
           console.log(chalk.gray(msg.copying));
-          const copied = await copyExcludedFiles(adapter, newWorktreePath);
+          const copied = await copyExcludedFiles(adapter, newWorktreePath, config.copySkip);
           console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
         }
 
@@ -184,7 +184,7 @@ const main = async () => {
         if (config.copyExcludes) {
           console.log();
           console.log(chalk.gray(msg.copying));
-          const copied = await copyExcludedFiles(adapter, addWorktreePath);
+          const copied = await copyExcludedFiles(adapter, addWorktreePath, config.copySkip);
           console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
         }
 
