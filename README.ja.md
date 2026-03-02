@@ -86,6 +86,7 @@ arbors list
 ```
 arbors add <branch>                     既存ブランチをチェックアウト（ローカル → リモート自動）
 arbors add -c <branch> [--base <branch>]  新しいブランチ + worktree作成
+arbors switch <branch>                  既存worktreeに移動
 arbors remove <branch>                  worktree削除（安全チェック付き）
 arbors list [--plain]                   管理中のworktree一覧
 arbors excluded                         excludeパターン確認

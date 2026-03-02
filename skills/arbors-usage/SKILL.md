@@ -12,6 +12,7 @@ arbors is a CLI/TUI tool for managing git worktrees. It handles worktree creatio
 ```sh
 arbors add <branch>                     # Checkout existing branch (local → remote auto)
 arbors add -c <branch> [--base <base>]  # Create new branch + worktree
+arbors switch <branch>                  # Switch to existing worktree
 arbors remove <branch>                  # Remove worktree (safety checks first)
 arbors list [--plain]                   # List arbors-managed worktrees
 arbors excluded                         # Show .git/info/exclude patterns
@@ -63,6 +64,17 @@ The `add` command handles both new and existing branches via the `-c` flag:
 3. Else if remote branch exists → `git fetch origin <branch>`, then create worktree from `origin/<branch>`
 4. Else → error with hint to use `arbors add -c`
 5. Copy excluded files, install deps, register in db (same as above)
+
+## How `arbors switch` Works
+
+`arbors switch <branch>`
+
+1. List all git worktrees via `git worktree list --porcelain`
+2. Find worktree matching the given branch name
+3. If found → print `__ARBORS_CD__:<path>` (shell wrapper picks this up to auto-cd)
+4. If not found → error with `worktreeNotFound` message
+
+Unlike `add`, `switch` does not create anything — it only navigates to an existing worktree.
 
 ## Safety
 

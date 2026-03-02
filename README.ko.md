@@ -86,6 +86,7 @@ arbors list
 ```
 arbors add <branch>                     기존 브랜치 체크아웃 (로컬 → 원격 자동)
 arbors add -c <branch> [--base <branch>]  새 브랜치 + worktree 생성
+arbors switch <branch>                  기존 worktree로 이동
 arbors remove <branch>                  worktree 삭제 (안전 검사 포함)
 arbors list [--plain]                   관리 중인 worktree 목록
 arbors excluded                         exclude 패턴 확인

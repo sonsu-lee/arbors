@@ -86,6 +86,7 @@ arbors list
 ```
 arbors add <branch>                     Checkout existing branch (local → remote auto)
 arbors add -c <branch> [--base <branch>]  Create new branch + worktree
+arbors switch <branch>                  Switch to existing worktree
 arbors remove <branch>                  Remove worktree (with safety checks)
 arbors list [--plain]                   List managed worktrees
 arbors excluded                         Show exclude patterns
