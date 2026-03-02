@@ -26,6 +26,8 @@ export const ko: Messages = {
   uncommittedChanges: "커밋되지 않은 변경사항이 있습니다. 커밋하거나 스태시하세요.",
   cannotDeleteMain: "메인 워크트리는 삭제할 수 없습니다.",
   invalidName: "올바르지 않은 워크트리 이름입니다.",
+  switching: "워크트리 이동 중...",
+  switched: "워크트리로 이동 완료",
 
   helpFooter: "Tab: 자동완성 | Enter: 선택 | Esc: 취소",
   helpWorktree: "Ctrl+B: 새 브랜치 | Ctrl+X: 삭제 | Esc: 뒤로",

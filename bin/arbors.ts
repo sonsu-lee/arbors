@@ -45,6 +45,7 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log(chalk.white(msg.commands));
   console.log("  add <branch>                    Checkout existing branch (local or remote)");
   console.log("  add -c <branch> [--base <br>]   Create a new branch worktree");
+  console.log("  switch <branch>                 Switch to existing worktree");
   console.log("  remove <branch>                 Remove a worktree");
   console.log("  list                            List worktrees");
   console.log("  excluded                        Show exclude patterns");
@@ -171,7 +172,29 @@ const main = async () => {
       }
 
       console.log();
-      console.log(chalk.gray(`  cd ${worktreePath}`));
+      console.log(`__ARBORS_CD__:${worktreePath}`);
+      break;
+    }
+
+    case "switch": {
+      if (!name) {
+        console.error(chalk.red("✗ Usage: arbors switch <branch>"));
+        process.exitCode = 1;
+        return;
+      }
+
+      const worktrees = await listWorktrees(adapter);
+      const target = worktrees.find((wt) => wt.branch === name);
+
+      if (!target) {
+        console.error(chalk.red(`✗ ${msg.worktreeNotFound}`));
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(chalk.gray(msg.switching));
+      console.log(chalk.green(`✓ ${msg.switched}: ${target.path}`));
+      console.log(`__ARBORS_CD__:${target.path}`);
       break;
     }
 

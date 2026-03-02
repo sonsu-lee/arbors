@@ -20,6 +20,8 @@ export interface Messages {
   uncommittedChanges: string;
   cannotDeleteMain: string;
   invalidName: string;
+  switching: string;
+  switched: string;
   helpFooter: string;
   helpWorktree: string;
   configSaved: string;
@@ -52,6 +54,8 @@ export const en: Messages = {
   uncommittedChanges: "Worktree has uncommitted changes. Commit or stash them first.",
   cannotDeleteMain: "Cannot delete the main worktree.",
   invalidName: "Invalid worktree name.",
+  switching: "Switching...",
+  switched: "Switched to worktree",
   helpFooter: "Tab: autocomplete | Enter: select | Esc: cancel",
   helpWorktree: "Ctrl+B: new branch | Ctrl+X: delete | Esc: back",
   configSaved: "Configuration saved.",

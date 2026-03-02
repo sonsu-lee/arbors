@@ -26,6 +26,8 @@ export const ja: Messages = {
   uncommittedChanges: "コミットされていない変更があります。コミットまたはスタッシュしてください。",
   cannotDeleteMain: "メインワークツリーは削除できません。",
   invalidName: "無効なワークツリー名です。",
+  switching: "ワークツリーに移動中...",
+  switched: "ワークツリーに移動しました",
 
   helpFooter: "Tab: 補完 | Enter: 選択 | Esc: キャンセル",
   helpWorktree: "Ctrl+B: 新ブランチ | Ctrl+X: 削除 | Esc: 戻る",
