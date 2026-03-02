@@ -12,6 +12,7 @@
   "bin": {
     "arbors": "./dist/arbors.js"
   },
+  "files": ["dist"],
   "type": "module",
   "imports": {
     "#/*": "./src/*"
