@@ -11,12 +11,12 @@ export const ko: Messages = {
 
   creating: "워크트리 생성 중...",
   removing: "워크트리 삭제 중...",
-  copying: "제외 파일 복사 중...",
+  copying: "무시된 파일 복사 중...",
   installing: "의존성 설치 중...",
 
   created: "워크트리 생성 완료",
   removed: "워크트리 삭제 완료",
-  copied: "제외 파일 복사 완료",
+  copied: "무시된 파일 복사 완료",
   installed: "의존성 설치 완료",
   resultsFound: (count: number) => `${count}개 결과`,
 

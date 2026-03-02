@@ -1,48 +1,50 @@
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { RuntimeAdapter } from "../runtime/adapter.js";
 import { getRepoRoot } from "./worktree.js";
 
-export const getExcludePatterns = async (adapter: RuntimeAdapter): Promise<string[]> => {
-  const repoRoot = await getRepoRoot(adapter);
-  const excludePath = join(repoRoot, ".git", "info", "exclude");
-
-  if (!(await adapter.exists(excludePath))) return [];
-
-  const content = await adapter.readFile(excludePath);
-
-  return content
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "" && !line.startsWith("#"));
+/**
+ * Convert a glob-like pattern to a RegExp.
+ * Supports `*` (any chars except `/`) and `**` (any chars including `/`).
+ */
+const patternToRegex = (pattern: string): RegExp => {
+  const escaped = pattern
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*\*/g, "\0")
+    .replace(/\*/g, "[^/]*")
+    .replace(/\0/g, ".*");
+  return new RegExp(`^${escaped}$`);
 };
 
-export const findExcludedEntries = async (
-  adapter: RuntimeAdapter,
-  patterns: string[],
-): Promise<string[]> => {
-  const repoRoot = await getRepoRoot(adapter);
-  const cleaned = patterns.map((p) => p.replace(/^\//, ""));
-
-  const groups = await Promise.all(
-    cleaned.map((pattern) => adapter.glob(pattern, repoRoot)),
-  );
-
-  return [...new Set(groups.flat())].sort();
+export const matchesPattern = (filepath: string, pattern: string): boolean => {
+  // If pattern contains `/`, match against full path
+  // Otherwise, match against basename (gitignore convention)
+  const target = pattern.includes("/") ? filepath : basename(filepath);
+  return patternToRegex(pattern).test(target);
 };
 
-export const copyExcludedFiles = async (
+export const getIgnoredFiles = async (adapter: RuntimeAdapter): Promise<string[]> => {
+  const { stdout, exitCode } = await adapter.exec("git", [
+    "ls-files",
+    "--others",
+    "--ignored",
+    "--exclude-standard",
+  ]);
+
+  if (exitCode !== 0 || !stdout) return [];
+
+  return stdout.split("\n").filter(Boolean);
+};
+
+export const copyIgnoredFiles = async (
   adapter: RuntimeAdapter,
   worktreePath: string,
-  skipPatterns: string[] = [],
+  patterns: string[],
 ): Promise<string[]> => {
-  const patterns = await getExcludePatterns(adapter);
   if (patterns.length === 0) return [];
 
   const repoRoot = await getRepoRoot(adapter);
-  const allEntries = await findExcludedEntries(adapter, patterns);
-  const entries = allEntries.filter(
-    (e) => !skipPatterns.some((s) => e === s || e.startsWith(`${s}/`)),
-  );
+  const allIgnored = await getIgnoredFiles(adapter);
+  const entries = allIgnored.filter((f) => patterns.some((p) => matchesPattern(f, p)));
 
   const copied: string[] = [];
 

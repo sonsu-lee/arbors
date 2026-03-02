@@ -61,7 +61,7 @@ describe("loadConfig", () => {
     expect(config.runtime).toBe("node");
     expect(config.language).toBe("en");
     expect(config.packageManager).toBe("auto");
-    expect(config.copyExcludes).toBe(true);
+    expect(config.copyPatterns).toEqual([".env*"]);
   });
 
   it("should merge project config over global config", async () => {

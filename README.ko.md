@@ -4,7 +4,7 @@
 
 git worktree를 편하게 쓰기 위한 CLI 도구.
 
-브랜치마다 별도의 디렉토리를 만들어서, **stash/switch 없이** 여러 브랜치를 동시에 작업할 수 있다. worktree 생성 시 exclude 파일 복사, 의존성 설치까지 자동으로 처리한다.
+브랜치마다 별도의 디렉토리를 만들어서, **stash/switch 없이** 여러 브랜치를 동시에 작업할 수 있다. worktree 생성 시 gitignore 파일 복사, 의존성 설치까지 자동으로 처리한다.
 
 ## Install
 
@@ -38,7 +38,7 @@ arbors add -c feature/login --base main
 # 자동으로 다음을 수행:
 #   1. git fetch origin main
 #   2. ~/arbors/{repo}/feature-login 에 worktree 생성
-#   3. .git/info/exclude에 있는 파일들 복사 (.env 등)
+#   3. .gitignore에 매칭되는 파일들 복사 (.env 등)
 #   4. pnpm install (lockfile 기준 자동 감지)
 
 cd ~/arbors/my-project/feature-login
@@ -91,7 +91,7 @@ arbors add -c <branch> [--base <branch>]  새 브랜치 + worktree 생성
 arbors switch <branch>                  기존 worktree로 이동
 arbors remove <branch>                  worktree 삭제 (안전 검사 포함)
 arbors list [--plain]                   관리 중인 worktree 목록
-arbors excluded                         exclude 패턴 확인
+arbors excluded                         복사 패턴 확인
 arbors config                           현재 설정 확인
 ```
 
@@ -104,8 +104,7 @@ arbors config                           현재 설정 확인
   "runtime": "node",
   "language": "ko",
   "packageManager": "auto",
-  "copyExcludes": true,
-  "copySkip": ["node_modules"],
+  "copyPatterns": [".env*"],
   "worktreeDir": "~/arbors/{repo}"
 }
 ```
@@ -115,8 +114,7 @@ arbors config                           현재 설정 확인
 | `runtime`        | `"node"`, `"bun"`                     | `"node"`            |
 | `language`       | `"en"`, `"ko"`, `"ja"`               | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
-| `copyExcludes`   | `true`, `false`                       | `true`              |
-| `copySkip`       | `string[]`                            | `["node_modules"]`  |
+| `copyPatterns`   | `string[]`                            | `[".env*"]`         |
 | `worktreeDir`    | string (`{repo}` placeholder)         | `"~/arbors/{repo}"` |
 
 ## Development

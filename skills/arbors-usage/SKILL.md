@@ -5,7 +5,7 @@ description: This skill should be used when the user asks to "create a worktree"
 
 # arbors — Git Worktree Manager
 
-arbors is a CLI/TUI tool for managing git worktrees. It handles worktree creation, `.git/info/exclude` file copying, package manager auto-detection, dependency installation, and project registry tracking.
+arbors is a CLI/TUI tool for managing git worktrees. It handles worktree creation, gitignored file copying via allowlist patterns, package manager auto-detection, dependency installation, and project registry tracking.
 
 ## Quick Reference
 
@@ -15,7 +15,7 @@ arbors add -c <branch> [--base <base>]  # Create new branch + worktree
 arbors switch <branch>                  # Switch to existing worktree
 arbors remove <branch>                  # Remove worktree (safety checks first)
 arbors list [--plain]                   # List arbors-managed worktrees
-arbors excluded                         # Show .git/info/exclude patterns
+arbors excluded                         # Show copy patterns
 arbors config                           # Show current configuration
 ```
 
@@ -50,7 +50,7 @@ The `add` command handles both new and existing branches via the `-c` flag:
 1. Validate branch name against `/^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/` (slashes allowed, no `..`)
 2. Check if branch already exists — error if so
 3. Run `git fetch origin <base>` then `git worktree add -b <branch> ~/arbors/{repo}/<dir> origin/<base>` (dir = branch with `/` → `-`)
-4. Copy files matching `.git/info/exclude` patterns (if `copyExcludes: true`)
+4. Copy gitignored files matching `copyPatterns` allowlist (default: `[".env*"]`)
 5. Detect runtime manager (mise.toml → `mise install`, .nvmrc → `nvm install`)
 6. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
 7. Register in `~/.arbors/db.json` (project + worktree tracking)
@@ -63,7 +63,7 @@ The `add` command handles both new and existing branches via the `-c` flag:
 2. If local branch exists → `git worktree add ~/arbors/{repo}/<dir> <branch>`
 3. Else if remote branch exists → `git fetch origin <branch>`, then create worktree from `origin/<branch>`
 4. Else → error with hint to use `arbors add -c`
-5. Copy excluded files, install deps, register in db (same as above)
+5. Copy gitignored files matching copyPatterns, install deps, register in db (same as above)
 
 ## How `arbors switch` Works
 
@@ -93,8 +93,7 @@ Global: `~/.arbors/config.json` — Project override: `.arbors/config.json` (in 
 | `runtime`        | `"node"`, `"bun"`                      | `"node"`            |
 | `language`       | `"en"`, `"ko"`, `"ja"`                 | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
-| `copyExcludes`   | `true`, `false`                        | `true`              |
-| `copySkip`       | `string[]`                             | `["node_modules"]`  |
+| `copyPatterns`   | `string[]`                             | `[".env*"]`         |
 | `worktreeDir`    | string with `{repo}` placeholder       | `"~/arbors/{repo}"` |
 
 ## Data Files
@@ -102,7 +101,7 @@ Global: `~/.arbors/config.json` — Project override: `.arbors/config.json` (in 
 - `~/.arbors/config.json` — Global configuration
 - `~/.arbors/db.json` — Project registry + worktree tracking (projects and worktrees per project)
 - `.arbors/config.json` — Per-project config override
-- `.git/info/exclude` — Patterns for files to copy into new worktrees
+- `copyPatterns` config — Allowlist patterns for gitignored files to copy into new worktrees
 
 ## Project Architecture
 
@@ -114,7 +113,7 @@ src/
 ├── git/
 │   ├── worktree.ts        # Core: create/remove/list worktrees, detect default branch
 │   ├── safety.ts          # Name validation, uncommitted changes check, main worktree guard
-│   └── exclude.ts         # Parse .git/info/exclude, find matching files, copy to worktree
+│   └── exclude.ts         # Find gitignored files via git ls-files, filter by allowlist, copy to worktree
 ├── project/
 │   ├── registry.ts        # ~/.arbors/db.json read/write, project + worktree CRUD
 │   └── setup.ts           # Package manager & runtime manager detection and install

@@ -4,7 +4,7 @@
 
 git worktreeを簡単に扱うためのCLIツール。
 
-ブランチごとに別ディレクトリを作成し、**stash/switchなしで**複数ブランチを同時に作業できる。worktree作成時にexcludeファイルのコピーと依存関係のインストールを自動で行う。
+ブランチごとに別ディレクトリを作成し、**stash/switchなしで**複数ブランチを同時に作業できる。worktree作成時にgitignoreファイルのコピーと依存関係のインストールを自動で行う。
 
 ## Install
 
@@ -38,7 +38,7 @@ arbors add -c feature/login --base main
 # 自動で以下を実行:
 #   1. git fetch origin main
 #   2. ~/arbors/{repo}/feature-login にworktreeを作成
-#   3. .git/info/excludeに記載されたファイルをコピー（.envなど）
+#   3. .gitignoreに一致するファイルをコピー（.envなど）
 #   4. pnpm install（lockfileから自動検出）
 
 cd ~/arbors/my-project/feature-login
@@ -91,7 +91,7 @@ arbors add -c <branch> [--base <branch>]  新しいブランチ + worktree作成
 arbors switch <branch>                  既存worktreeに移動
 arbors remove <branch>                  worktree削除（安全チェック付き）
 arbors list [--plain]                   管理中のworktree一覧
-arbors excluded                         excludeパターン確認
+arbors excluded                         コピーパターン確認
 arbors config                           現在の設定確認
 ```
 
@@ -104,8 +104,7 @@ arbors config                           現在の設定確認
   "runtime": "node",
   "language": "ja",
   "packageManager": "auto",
-  "copyExcludes": true,
-  "copySkip": ["node_modules"],
+  "copyPatterns": [".env*"],
   "worktreeDir": "~/arbors/{repo}"
 }
 ```
@@ -115,8 +114,7 @@ arbors config                           現在の設定確認
 | `runtime`        | `"node"`, `"bun"`                     | `"node"`            |
 | `language`       | `"en"`, `"ko"`, `"ja"`               | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
-| `copyExcludes`   | `true`, `false`                       | `true`              |
-| `copySkip`       | `string[]`                            | `["node_modules"]`  |
+| `copyPatterns`   | `string[]`                            | `[".env*"]`         |
 | `worktreeDir`    | string (`{repo}` placeholder)         | `"~/arbors/{repo}"` |
 
 ## Development

@@ -4,7 +4,7 @@
 
 A CLI tool for managing git worktrees.
 
-Create a separate directory for each branch and work on multiple branches simultaneously — no stash or switch needed. Automatically copies exclude files and installs dependencies when creating worktrees.
+Create a separate directory for each branch and work on multiple branches simultaneously — no stash or switch needed. Automatically copies gitignored files and installs dependencies when creating worktrees.
 
 ## Install
 
@@ -38,7 +38,7 @@ arbors add -c feature/login --base main
 # This automatically:
 #   1. git fetch origin main
 #   2. Creates worktree at ~/arbors/{repo}/feature-login
-#   3. Copies files listed in .git/info/exclude (.env, etc.)
+#   3. Copies gitignored files matching copyPatterns (.env, etc.)
 #   4. Runs pnpm install (auto-detects from lockfile)
 
 cd ~/arbors/my-project/feature-login
@@ -91,7 +91,7 @@ arbors add -c <branch> [--base <branch>]  Create new branch + worktree
 arbors switch <branch>                  Switch to existing worktree
 arbors remove <branch>                  Remove worktree (with safety checks)
 arbors list [--plain]                   List managed worktrees
-arbors excluded                         Show exclude patterns
+arbors excluded                         Show copy patterns
 arbors config                           Show current config
 ```
 
@@ -104,8 +104,7 @@ arbors config                           Show current config
   "runtime": "node",
   "language": "en",
   "packageManager": "auto",
-  "copyExcludes": true,
-  "copySkip": ["node_modules"],
+  "copyPatterns": [".env*"],
   "worktreeDir": "~/arbors/{repo}"
 }
 ```
@@ -115,8 +114,7 @@ arbors config                           Show current config
 | `runtime`        | `"node"`, `"bun"`                     | `"node"`            |
 | `language`       | `"en"`, `"ko"`, `"ja"`               | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
-| `copyExcludes`   | `true`, `false`                       | `true`              |
-| `copySkip`       | `string[]`                            | `["node_modules"]`  |
+| `copyPatterns`   | `string[]`                            | `[".env*"]`         |
 | `worktreeDir`    | string (`{repo}` placeholder)         | `"~/arbors/{repo}"` |
 
 ## Development

@@ -11,12 +11,12 @@ export const ja: Messages = {
 
   creating: "ワークツリーを作成中...",
   removing: "ワークツリーを削除中...",
-  copying: "除外ファイルをコピー中...",
+  copying: "無視ファイルをコピー中...",
   installing: "依存関係をインストール中...",
 
   created: "ワークツリーを作成しました",
   removed: "ワークツリーを削除しました",
-  copied: "除外ファイルをコピーしました",
+  copied: "無視ファイルをコピーしました",
   installed: "依存関係をインストールしました",
   resultsFound: (count: number) => `${count}件の結果`,
 

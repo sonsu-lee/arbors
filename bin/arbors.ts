@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { loadConfig } from "../src/config.js";
-import { copyExcludedFiles, getExcludePatterns } from "../src/git/exclude.js";
+import { copyIgnoredFiles } from "../src/git/exclude.js";
 import { validateWorktreeName, canSafelyRemove } from "../src/git/safety.js";
 import {
   branchExists,
@@ -48,7 +48,7 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  switch <branch>                 Switch to existing worktree");
   console.log("  remove <branch>                 Remove a worktree");
   console.log("  list                            List worktrees");
-  console.log("  excluded                        Show exclude patterns");
+  console.log("  excluded                        Show copy patterns");
   console.log("  config                          Show current config");
   console.log();
   console.log(chalk.white(msg.options));
@@ -141,10 +141,10 @@ const main = async () => {
       }
 
       try {
-        if (config.copyExcludes) {
+        if (config.copyPatterns.length > 0) {
           console.log();
           console.log(chalk.gray(msg.copying));
-          const copied = await copyExcludedFiles(adapter, worktreePath, config.copySkip);
+          const copied = await copyIgnoredFiles(adapter, worktreePath, config.copyPatterns);
           console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
         }
 
@@ -265,14 +265,13 @@ const main = async () => {
     }
 
     case "excluded": {
-      const patterns = await getExcludePatterns(adapter);
-      if (patterns.length === 0) {
-        console.log(chalk.gray("No exclude patterns found in .git/info/exclude"));
+      if (config.copyPatterns.length === 0) {
+        console.log(chalk.gray("No copy patterns configured"));
       } else {
         console.log();
         console.log(chalk.cyan.bold("arbors excluded"));
         console.log();
-        patterns.forEach((p) => console.log(`  ${p}`));
+        config.copyPatterns.forEach((p: string) => console.log(`  ${p}`));
       }
       break;
     }
