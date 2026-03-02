@@ -29,7 +29,7 @@ pnpm install && pnpm build
 npm link
 ```
 
-Shell integration is required for auto-cd — a child process (node) cannot change the parent shell's cwd, so the wrapper script captures arbors's `__ARBORS_CD__:<path>` protocol output and runs `cd` in the parent shell.
+Shell integration is **required** for `arbors switch` and auto-cd after `arbors add` — a child process (node) cannot change the parent shell's cwd, so the wrapper script captures arbors's `__ARBORS_CD__:<path>` protocol output and runs `cd` in the parent shell. Without the wrapper, these commands will print the path but won't change directory.
 
 ```sh
 # ~/.zshrc

@@ -15,7 +15,7 @@ pnpm install && pnpm build
 npm link
 ```
 
-Shell integration（worktree切り替え後の自動`cd`）：
+Shell integration（`arbors switch`および`arbors add`後の自動`cd`に**必須**）：
 
 ```sh
 # ~/.zshrc
@@ -24,6 +24,8 @@ source /path/to/arbors/shell/arbors-wrapper.zsh
 # ~/.bashrc
 source /path/to/arbors/shell/arbors-wrapper.sh
 ```
+
+wrapperがarborsの`__ARBORS_CD__`出力をパースし、親シェルで`cd`を実行する。なければ`switch`と`add`はパスを表示するだけでディレクトリ移動しない。
 
 ## Workflows
 
