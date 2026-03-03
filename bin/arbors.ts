@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { loadConfig } from "../src/config.js";
 import { copyIgnoredFiles } from "../src/git/exclude.js";
-import { validateWorktreeName, canSafelyRemove } from "../src/git/safety.js";
+import { validateWorktreeName, canSafelyRemove, isMainWorktree } from "../src/git/safety.js";
 import {
   branchExists,
   checkoutRemoteWorktree,
@@ -27,6 +27,7 @@ const parseArgs = (argv: string[]) => {
     }
     if (arg === "--plain") acc.plain = "true";
     if (arg === "--create" || arg === "-c") acc.create = "true";
+    if (arg === "--force" || arg === "-f") acc.force = "true";
     if (arg === "--help" || arg === "-h") acc.help = "true";
     if (arg === "--version" || arg === "-v") acc.version = "true";
     return acc;
@@ -46,12 +47,13 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  add <branch>                    Checkout existing branch (local or remote)");
   console.log("  add -c <branch> [--base <br>]   Create a new branch worktree");
   console.log("  switch <branch>                 Switch to existing worktree");
-  console.log("  remove <branch>                 Remove a worktree");
+  console.log("  remove <branch> [-f]             Remove a worktree");
   console.log("  list                            List worktrees");
   console.log("  excluded                        Show copy patterns");
   console.log("  config                          Show current config");
   console.log();
   console.log(chalk.white(msg.options));
+  console.log("  -f, --force                   Force remove (skip uncommitted changes check)");
   console.log("  --plain                       Machine-readable output");
   console.log("  -h, --help                    Show help");
   console.log("  -v, --version                 Show version");
@@ -219,15 +221,24 @@ const main = async () => {
         return;
       }
 
-      const { safe, reason } = await canSafelyRemove(adapter, target.path);
-      if (!safe) {
-        const errorMsg = reason ? msg[reason as keyof typeof msg] : "Cannot remove";
-        console.error(chalk.red(`✗ ${errorMsg}`));
+      if (await isMainWorktree(adapter, target.path)) {
+        console.error(chalk.red(`✗ ${msg.cannotDeleteMain}`));
         process.exitCode = 1;
         return;
       }
 
-      console.log(chalk.gray(msg.removing));
+      if (flags.force) {
+        console.log(chalk.yellow(`⚠ ${msg.forceRemoving}`));
+      } else {
+        const { safe, reason } = await canSafelyRemove(adapter, target.path);
+        if (!safe) {
+          const errorMsg = reason ? msg[reason as keyof typeof msg] : "Cannot remove";
+          console.error(chalk.red(`✗ ${errorMsg}`));
+          process.exitCode = 1;
+          return;
+        }
+        console.log(chalk.gray(msg.removing));
+      }
       await removeWorktree(adapter, target.path, target.branch);
       await unregisterWorktree(adapter, target.path);
       console.log(chalk.green(`✓ ${msg.removed}: ${name}`));
