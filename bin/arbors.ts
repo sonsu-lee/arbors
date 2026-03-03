@@ -249,15 +249,17 @@ const main = async () => {
       const repoRootForList = await getRepoRoot(adapter);
       const dbWorktrees = await getWorktrees(adapter, repoRootForList);
       const gitWorktrees = await listWorktrees(adapter);
-      const gitPaths = new Set(gitWorktrees.map((wt) => wt.path));
+      const gitByPath = new Map(gitWorktrees.map((wt) => [wt.path, wt.branch]));
 
       // Reconcile: remove db entries that no longer exist in git
-      const stale = dbWorktrees.filter((w) => !gitPaths.has(w.path));
+      const stale = dbWorktrees.filter((w) => !gitByPath.has(w.path));
       for (const w of stale) {
         await unregisterWorktree(adapter, w.path);
       }
 
-      const managedWorktrees = dbWorktrees.filter((w) => gitPaths.has(w.path));
+      const managedWorktrees = dbWorktrees
+        .filter((w) => gitByPath.has(w.path))
+        .map((wt) => ({ ...wt, branch: gitByPath.get(wt.path) ?? wt.branch }));
 
       if (flags.plain) {
         managedWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
