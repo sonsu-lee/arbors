@@ -25,6 +25,7 @@ export const ja: Messages = {
   worktreeNotFound: "ワークツリーが見つかりません。",
   uncommittedChanges: "コミットされていない変更があります。コミットまたはスタッシュしてください。",
   cannotDeleteMain: "メインワークツリーは削除できません。",
+  forceRemoving: "コミットされていない変更を無視してワークツリーを強制削除します...",
   invalidName: "無効なワークツリー名です。",
   switching: "ワークツリーに移動中...",
   switched: "ワークツリーに移動しました",
