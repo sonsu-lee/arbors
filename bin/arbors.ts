@@ -221,12 +221,13 @@ const main = async () => {
         return;
       }
 
+      if (await isMainWorktree(adapter, target.path)) {
+        console.error(chalk.red(`✗ ${msg.cannotDeleteMain}`));
+        process.exitCode = 1;
+        return;
+      }
+
       if (flags.force) {
-        if (await isMainWorktree(adapter, target.path)) {
-          console.error(chalk.red(`✗ ${msg.cannotDeleteMain}`));
-          process.exitCode = 1;
-          return;
-        }
         console.log(chalk.yellow(`⚠ ${msg.forceRemoving}`));
       } else {
         const { safe, reason } = await canSafelyRemove(adapter, target.path);
