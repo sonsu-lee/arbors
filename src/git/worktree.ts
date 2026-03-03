@@ -99,6 +99,8 @@ export const createWorktree = async (
     throw new Error(result.stderr || "Failed to create worktree");
   }
 
+  await adapter.exec("git", ["branch", "--unset-upstream", branch]);
+
   return worktreePath;
 };
 
