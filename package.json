@@ -1,6 +1,6 @@
 {
   "name": "arbors",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Interactive git worktree manager with TUI",
   "keywords": [
     "cli",
@@ -12,7 +12,9 @@
   "bin": {
     "arbors": "./dist/arbors.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "imports": {
     "#/*": "./src/*"
