@@ -47,7 +47,7 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  add <branch>                    Checkout existing branch (local or remote)");
   console.log("  add -c <branch> [--base <br>]   Create a new branch worktree");
   console.log("  switch <branch>                 Switch to existing worktree");
-  console.log("  remove <branch> [-f]             Remove a worktree");
+  console.log("  remove (-r) <branch> [-f]        Remove a worktree");
   console.log("  list                            List worktrees");
   console.log("  excluded                        Show copy patterns");
   console.log("  config                          Show current config");
@@ -200,6 +200,7 @@ const main = async () => {
       break;
     }
 
+    case "-r":
     case "remove": {
       if (!name) {
         console.error(chalk.red("✗ Usage: arbors remove <branch>"));
@@ -249,15 +250,17 @@ const main = async () => {
       const repoRootForList = await getRepoRoot(adapter);
       const dbWorktrees = await getWorktrees(adapter, repoRootForList);
       const gitWorktrees = await listWorktrees(adapter);
-      const gitPaths = new Set(gitWorktrees.map((wt) => wt.path));
+      const gitByPath = new Map(gitWorktrees.map((wt) => [wt.path, wt.branch]));
 
       // Reconcile: remove db entries that no longer exist in git
-      const stale = dbWorktrees.filter((w) => !gitPaths.has(w.path));
+      const stale = dbWorktrees.filter((w) => !gitByPath.has(w.path));
       for (const w of stale) {
         await unregisterWorktree(adapter, w.path);
       }
 
-      const managedWorktrees = dbWorktrees.filter((w) => gitPaths.has(w.path));
+      const managedWorktrees = dbWorktrees
+        .filter((w) => gitByPath.has(w.path))
+        .map((wt) => ({ ...wt, branch: gitByPath.get(wt.path) ?? wt.branch }));
 
       if (flags.plain) {
         managedWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
