@@ -47,7 +47,7 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  add <branch>                    Checkout existing branch (local or remote)");
   console.log("  add -c <branch> [--base <br>]   Create a new branch worktree");
   console.log("  switch <branch>                 Switch to existing worktree");
-  console.log("  remove <branch> [-f]             Remove a worktree");
+  console.log("  remove (-r) <branch> [-f]        Remove a worktree");
   console.log("  list                            List worktrees");
   console.log("  excluded                        Show copy patterns");
   console.log("  config                          Show current config");
@@ -200,6 +200,7 @@ const main = async () => {
       break;
     }
 
+    case "-r":
     case "remove": {
       if (!name) {
         console.error(chalk.red("✗ Usage: arbors remove <branch>"));
