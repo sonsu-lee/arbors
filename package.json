@@ -9,6 +9,10 @@
     "worktree"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sonsu-lee/arbors"
+  },
   "bin": {
     "arbors": "./dist/arbors.js"
   },
