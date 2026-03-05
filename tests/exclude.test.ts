@@ -68,13 +68,13 @@ describe("getIgnoredFiles", () => {
 });
 
 describe("copyIgnoredFiles", () => {
-  it("should copy only files matching allowlist patterns", async () => {
+  it("should copy all ignored files except those matching exclude patterns", async () => {
     const copyFn = vi.fn();
     const adapter = createMockAdapter({
       exec: vi.fn(async (_cmd: string, args?: string[]) => {
         if (args?.[0] === "ls-files") {
           return {
-            stdout: ".env\n.env.local\nnode_modules/.bin/tsc\ndist/index.js\nfrontend/.env.development.local\n",
+            stdout: ".env\n.env.local\nnode_modules/.bin/tsc\ndist/index.js\nfrontend/.env.development.local\n.claude/settings.json\nCLAUDE.md\n",
             stderr: "",
             exitCode: 0,
           };
@@ -84,22 +84,30 @@ describe("copyIgnoredFiles", () => {
       copy: copyFn,
     });
 
-    const copied = await copyIgnoredFiles(adapter, "/worktree", [".env*"]);
+    const copied = await copyIgnoredFiles(adapter, "/worktree", ["node_modules", "dist"]);
 
-    expect(copied).toEqual([".env", ".env.local", "frontend/.env.development.local"]);
-    expect(copyFn).toHaveBeenCalledTimes(3);
-    expect(copyFn).toHaveBeenCalledWith("/repo/.env", "/worktree/.env");
-    expect(copyFn).toHaveBeenCalledWith("/repo/.env.local", "/worktree/.env.local");
-    expect(copyFn).toHaveBeenCalledWith(
-      "/repo/frontend/.env.development.local",
-      "/worktree/frontend/.env.development.local",
-    );
+    expect(copied).toHaveLength(5);
+    expect(copied).toEqual(expect.arrayContaining([".env", ".env.local", "frontend/.env.development.local", ".claude/settings.json", "CLAUDE.md"]));
+    expect(copyFn).toHaveBeenCalledTimes(5);
+    expect(copyFn).not.toHaveBeenCalledWith("/repo/node_modules/.bin/tsc", "/worktree/node_modules/.bin/tsc");
+    expect(copyFn).not.toHaveBeenCalledWith("/repo/dist/index.js", "/worktree/dist/index.js");
   });
 
-  it("should return empty array when patterns list is empty", async () => {
-    const adapter = createMockAdapter();
+  it("should copy all files when exclude list is empty", async () => {
+    const copyFn = vi.fn();
+    const adapter = createMockAdapter({
+      exec: vi.fn(async (_cmd: string, args?: string[]) => {
+        if (args?.[0] === "ls-files") {
+          return { stdout: ".env\nCLAUDE.md\n", stderr: "", exitCode: 0 };
+        }
+        return { stdout: "/repo", stderr: "", exitCode: 0 };
+      }),
+      copy: copyFn,
+    });
+
     const copied = await copyIgnoredFiles(adapter, "/worktree", []);
-    expect(copied).toEqual([]);
+    expect(copied).toEqual([".env", "CLAUDE.md"]);
+    expect(copyFn).toHaveBeenCalledTimes(2);
   });
 
   it("should skip non-copyable entries", async () => {
@@ -115,7 +123,7 @@ describe("copyIgnoredFiles", () => {
       }),
     });
 
-    const copied = await copyIgnoredFiles(adapter, "/worktree", [".env*"]);
+    const copied = await copyIgnoredFiles(adapter, "/worktree", []);
     expect(copied).toEqual([".env"]);
   });
 });

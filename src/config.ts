@@ -5,7 +5,7 @@ export interface ArborConfig {
   runtime: "bun" | "node";
   language: "ko" | "en" | "ja";
   packageManager: "auto" | "pnpm" | "yarn" | "npm";
-  copyPatterns: string[];
+  excludeFromCopy: string[];
   worktreeDir: string;
 }
 
@@ -13,7 +13,7 @@ const DEFAULT_CONFIG: ArborConfig = {
   runtime: "node",
   language: "en",
   packageManager: "auto",
-  copyPatterns: [".env*"],
+  excludeFromCopy: ["node_modules", "dist", "build", "out", ".next", ".nuxt", ".turbo", ".cache", "coverage", "*.log"],
   worktreeDir: "~/arbors/{repo}",
 } satisfies ArborConfig;
 

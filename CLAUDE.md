@@ -13,7 +13,7 @@ Git worktree manager CLI. Create/switch/remove worktrees with auto dependency in
 src/config.ts            Config loading (global -> project merge)
 src/git/worktree.ts      Core worktree operations
 src/git/safety.ts        Name validation, safety checks
-src/git/exclude.ts       Gitignored file copying via allowlist
+src/git/exclude.ts       Gitignored file copying via blocklist (excludeFromCopy)
 src/project/registry.ts  ~/.arbors/db.json CRUD
 src/project/setup.ts     Package manager & runtime detection
 src/runtime/             RuntimeAdapter interface + Node/Bun implementations

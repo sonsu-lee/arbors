@@ -61,7 +61,7 @@ describe("loadConfig", () => {
     expect(config.runtime).toBe("node");
     expect(config.language).toBe("en");
     expect(config.packageManager).toBe("auto");
-    expect(config.copyPatterns).toEqual([".env*"]);
+    expect(config.excludeFromCopy).toEqual(["node_modules", "dist", "build", "out", ".next", ".nuxt", ".turbo", ".cache", "coverage", "*.log"]);
   });
 
   it("should merge project config over global config", async () => {

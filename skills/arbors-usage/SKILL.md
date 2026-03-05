@@ -50,7 +50,7 @@ The `add` command handles both new and existing branches via the `-c` flag:
 1. Validate branch name against `/^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/` (slashes allowed, no `..`)
 2. Check if branch already exists — error if so
 3. Run `git fetch origin <base>` then `git worktree add -b <branch> ~/arbors/{repo}/<dir> origin/<base>` (dir = branch with `/` → `-`)
-4. Copy gitignored files matching `copyPatterns` allowlist (default: `[".env*"]`)
+4. Copy gitignored files (all except `excludeFromCopy` blocklist: node_modules, dist, etc.)
 5. Detect runtime manager (mise.toml → `mise install`, .nvmrc → `nvm install`)
 6. Detect package manager (pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm) and run install
 7. Register in `~/.arbors/db.json` (project + worktree tracking)
@@ -63,7 +63,7 @@ The `add` command handles both new and existing branches via the `-c` flag:
 2. If local branch exists → `git worktree add ~/arbors/{repo}/<dir> <branch>`
 3. Else if remote branch exists → `git fetch origin <branch>`, then create worktree from `origin/<branch>`
 4. Else → error with hint to use `arbors add -c`
-5. Copy gitignored files matching copyPatterns, install deps, register in db (same as above)
+5. Copy gitignored files (excluding blocklist), install deps, register in db (same as above)
 
 ## How `arbors switch` Works
 
@@ -93,7 +93,7 @@ Global: `~/.arbors/config.json` — Project override: `.arbors/config.json` (in 
 | `runtime`        | `"node"`, `"bun"`                      | `"node"`            |
 | `language`       | `"en"`, `"ko"`, `"ja"`                 | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
-| `copyPatterns`   | `string[]`                             | `[".env*"]`         |
+| `excludeFromCopy` | `string[]`                            | `["node_modules", "dist", ...]` |
 | `worktreeDir`    | string with `{repo}` placeholder       | `"~/arbors/{repo}"` |
 
 ## Data Files
@@ -101,7 +101,7 @@ Global: `~/.arbors/config.json` — Project override: `.arbors/config.json` (in 
 - `~/.arbors/config.json` — Global configuration
 - `~/.arbors/db.json` — Project registry + worktree tracking (projects and worktrees per project)
 - `.arbors/config.json` — Per-project config override
-- `copyPatterns` config — Allowlist patterns for gitignored files to copy into new worktrees
+- `excludeFromCopy` config — Blocklist patterns for gitignored files to exclude from copying into new worktrees
 
 ## Project Architecture
 
