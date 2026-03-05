@@ -16,10 +16,13 @@ const patternToRegex = (pattern: string): RegExp => {
 };
 
 export const matchesPattern = (filepath: string, pattern: string): boolean => {
-  // If pattern contains `/`, match against full path
-  // Otherwise, match against basename (gitignore convention)
-  const target = pattern.includes("/") ? filepath : basename(filepath);
-  return patternToRegex(pattern).test(target);
+  if (pattern.includes("/")) {
+    // Match against full path
+    return patternToRegex(pattern).test(filepath);
+  }
+  // Match against basename and each path segment (gitignore convention)
+  const regex = patternToRegex(pattern);
+  return regex.test(basename(filepath)) || filepath.split("/").some((seg) => regex.test(seg));
 };
 
 export const getIgnoredFiles = async (adapter: RuntimeAdapter): Promise<string[]> => {
@@ -38,13 +41,11 @@ export const getIgnoredFiles = async (adapter: RuntimeAdapter): Promise<string[]
 export const copyIgnoredFiles = async (
   adapter: RuntimeAdapter,
   worktreePath: string,
-  patterns: string[],
+  excludePatterns: string[],
 ): Promise<string[]> => {
-  if (patterns.length === 0) return [];
-
   const repoRoot = await getRepoRoot(adapter);
   const allIgnored = await getIgnoredFiles(adapter);
-  const entries = allIgnored.filter((f) => patterns.some((p) => matchesPattern(f, p)));
+  const entries = allIgnored.filter((f) => !excludePatterns.some((p) => matchesPattern(f, p)));
 
   const copied: string[] = [];
 

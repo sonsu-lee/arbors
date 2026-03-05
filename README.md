@@ -38,7 +38,7 @@ arbors add -c feature/login --base main
 # This automatically:
 #   1. git fetch origin main
 #   2. Creates worktree at ~/arbors/{repo}/feature-login
-#   3. Copies gitignored files matching copyPatterns (.env, etc.)
+#   3. Copies gitignored files (excluding node_modules, dist, etc.)
 #   4. Runs pnpm install (auto-detects from lockfile)
 
 cd ~/arbors/my-project/feature-login
@@ -104,7 +104,7 @@ arbors config                           Show current config
   "runtime": "node",
   "language": "en",
   "packageManager": "auto",
-  "copyPatterns": [".env*"],
+  "excludeFromCopy": ["node_modules", "dist", "build", "out", ".next", ".nuxt", ".turbo", ".cache", "coverage", "*.log"],
   "worktreeDir": "~/arbors/{repo}"
 }
 ```
@@ -114,7 +114,7 @@ arbors config                           Show current config
 | `runtime`        | `"node"`, `"bun"`                     | `"node"`            |
 | `language`       | `"en"`, `"ko"`, `"ja"`               | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
-| `copyPatterns`   | `string[]`                            | `[".env*"]`         |
+| `excludeFromCopy` | `string[]`                           | `["node_modules", "dist", ...]` |
 | `worktreeDir`    | string (`{repo}` placeholder)         | `"~/arbors/{repo}"` |
 
 ## Development

@@ -104,7 +104,7 @@ arbors config                           現在の設定確認
   "runtime": "node",
   "language": "ja",
   "packageManager": "auto",
-  "copyPatterns": [".env*"],
+  "excludeFromCopy": ["node_modules", "dist", "build", "out", ".next", ".nuxt", ".turbo", ".cache", "coverage", "*.log"],
   "worktreeDir": "~/arbors/{repo}"
 }
 ```
@@ -114,7 +114,7 @@ arbors config                           現在の設定確認
 | `runtime`        | `"node"`, `"bun"`                     | `"node"`            |
 | `language`       | `"en"`, `"ko"`, `"ja"`               | `"en"`              |
 | `packageManager` | `"auto"`, `"pnpm"`, `"yarn"`, `"npm"` | `"auto"`            |
-| `copyPatterns`   | `string[]`                            | `[".env*"]`         |
+| `excludeFromCopy` | `string[]`                           | `["node_modules", "dist", ...]` |
 | `worktreeDir`    | string (`{repo}` placeholder)         | `"~/arbors/{repo}"` |
 
 ## Development

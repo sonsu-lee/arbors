@@ -49,7 +49,7 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  switch <branch>                 Switch to existing worktree");
   console.log("  remove (-r) <branch> [-f]        Remove a worktree");
   console.log("  list                            List worktrees");
-  console.log("  excluded                        Show copy patterns");
+  console.log("  excluded                        Show exclude-from-copy patterns");
   console.log("  config                          Show current config");
   console.log();
   console.log(chalk.white(msg.options));
@@ -143,12 +143,10 @@ const main = async () => {
       }
 
       try {
-        if (config.copyPatterns.length > 0) {
-          console.log();
-          console.log(chalk.gray(msg.copying));
-          const copied = await copyIgnoredFiles(adapter, worktreePath, config.copyPatterns);
-          console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
-        }
+        console.log();
+        console.log(chalk.gray(msg.copying));
+        const copied = await copyIgnoredFiles(adapter, worktreePath, config.excludeFromCopy);
+        console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
 
         console.log();
         console.log(chalk.gray(msg.installing));
@@ -279,13 +277,13 @@ const main = async () => {
     }
 
     case "excluded": {
-      if (config.copyPatterns.length === 0) {
-        console.log(chalk.gray("No copy patterns configured"));
+      console.log();
+      console.log(chalk.cyan.bold("arbors excluded"));
+      console.log();
+      if (config.excludeFromCopy.length === 0) {
+        console.log(chalk.gray("  No exclude patterns (all ignored files will be copied)"));
       } else {
-        console.log();
-        console.log(chalk.cyan.bold("arbors excluded"));
-        console.log();
-        config.copyPatterns.forEach((p: string) => console.log(`  ${p}`));
+        config.excludeFromCopy.forEach((p: string) => console.log(`  ${p}`));
       }
       break;
     }
