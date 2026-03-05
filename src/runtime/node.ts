@@ -1,24 +1,24 @@
-import { execFile } from "node:child_process";
+import { spawn } from "node:child_process";
 import { cp, glob, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { promisify } from "node:util";
 import type { RuntimeAdapter } from "./adapter.js";
-
-const execFileAsync = promisify(execFile);
 
 export const createNodeAdapter = (): RuntimeAdapter => ({
   async exec(cmd, args) {
-    try {
-      const { stdout, stderr } = await execFileAsync(cmd, args);
-      return { stdout: stdout.trimEnd(), stderr: stderr.trimEnd(), exitCode: 0 };
-    } catch (error: unknown) {
-      const err = error as { stdout?: string; stderr?: string; code?: number };
-      return {
-        stdout: (err.stdout ?? "").trimEnd(),
-        stderr: (err.stderr ?? "").trimEnd(),
-        exitCode: err.code ?? 1,
-      };
-    }
+    return new Promise((resolve) => {
+      const proc = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"] });
+      let stdout = "";
+      let stderr = "";
+      proc.stdout.on("data", (chunk: Buffer) => {
+        stdout += chunk;
+      });
+      proc.stderr.on("data", (chunk: Buffer) => {
+        stderr += chunk;
+      });
+      proc.on("close", (code) => {
+        resolve({ stdout: stdout.trimEnd(), stderr: stderr.trimEnd(), exitCode: code ?? 1 });
+      });
+    });
   },
 
   async glob(pattern, cwd) {
