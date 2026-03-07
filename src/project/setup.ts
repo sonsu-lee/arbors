@@ -61,13 +61,13 @@ export const runSetup = async (
 
   if (rm) {
     const [cmd, args] = RM_INSTALL_ARGS[rm];
-    await adapter.exec(cmd, args);
+    await adapter.exec(cmd, args, { cwd });
   }
 
   const pm = configPm && configPm !== "auto" ? configPm : await detectPackageManager(adapter, cwd);
 
   if (pm) {
-    await adapter.exec(pm, PM_INSTALL_ARGS[pm]);
+    await adapter.exec(pm, PM_INSTALL_ARGS[pm], { cwd });
   }
 
   return { packageManager: pm, runtimeManager: rm };
