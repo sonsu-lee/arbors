@@ -59,8 +59,21 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  -v, --version                 Show version");
 };
 
+const getProjectRoot = async (): Promise<string | undefined> => {
+  const { spawn } = await import("node:child_process");
+  return new Promise((resolve) => {
+    const proc = spawn("git", ["rev-parse", "--show-toplevel"], { stdio: ["ignore", "pipe", "ignore"] });
+    let stdout = "";
+    proc.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk;
+    });
+    proc.on("close", (code) => resolve(code === 0 ? stdout.trimEnd() : undefined));
+  });
+};
+
 const main = async () => {
   const { command, name, flags } = parseArgs(process.argv);
+  const projectRoot = await getProjectRoot();
   const config = await loadConfig(
     async (p) => {
       const { readFile } = await import("node:fs/promises");
@@ -75,6 +88,7 @@ const main = async () => {
         return false;
       }
     },
+    projectRoot,
   );
 
   const msg = await loadMessages(config.language);
