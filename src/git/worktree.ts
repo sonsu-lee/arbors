@@ -8,14 +8,20 @@ export interface WorktreeInfo {
   isMain: boolean;
 }
 
-export const getRepoRoot = async (adapter: RuntimeAdapter): Promise<string> => {
+export const getWorktreeRoot = async (adapter: RuntimeAdapter): Promise<string> => {
   const result = await adapter.exec("git", ["rev-parse", "--show-toplevel"]);
   if (result.exitCode !== 0) throw new Error("Not a git repository");
   return result.stdout;
 };
 
+export const getMainRepoRoot = async (adapter: RuntimeAdapter): Promise<string> => {
+  const worktrees = await listWorktrees(adapter);
+  if (worktrees.length === 0) throw new Error("Not a git repository");
+  return worktrees[0].path;
+};
+
 export const getRepoName = async (adapter: RuntimeAdapter): Promise<string> => {
-  const root = await getRepoRoot(adapter);
+  const root = await getMainRepoRoot(adapter);
   return basename(root);
 };
 

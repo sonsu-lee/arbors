@@ -1,13 +1,13 @@
 import chalk from "chalk";
 import { loadConfig } from "../src/config.js";
 import { copyIgnoredFiles } from "../src/git/exclude.js";
-import { validateWorktreeName, canSafelyRemove, isMainWorktree } from "../src/git/safety.js";
+import { validateWorktreeName, canSafelyRemove, isCurrentWorktree, isMainWorktree } from "../src/git/safety.js";
 import {
   branchExists,
   checkoutRemoteWorktree,
   checkoutWorktree,
   createWorktree,
-  getRepoRoot,
+  getMainRepoRoot,
   listWorktrees,
   remoteBranchExists,
   removeWorktree,
@@ -153,7 +153,7 @@ const main = async () => {
         await runSetup(adapter, worktreePath, config.packageManager);
         console.log(chalk.green(`✓ ${msg.installed}`));
 
-        const repoRoot = await getRepoRoot(adapter);
+        const repoRoot = await getMainRepoRoot(adapter);
         await registerProject(adapter, name, repoRoot);
         await registerWorktree(adapter, worktreePath, name, repoRoot);
       } catch (setupErr) {
@@ -220,6 +220,12 @@ const main = async () => {
         return;
       }
 
+      if (await isCurrentWorktree(adapter, target.path)) {
+        console.error(chalk.red(`✗ ${msg.cannotRemoveCurrent}`));
+        process.exitCode = 1;
+        return;
+      }
+
       if (await isMainWorktree(adapter, target.path)) {
         console.error(chalk.red(`✗ ${msg.cannotDeleteMain}`));
         process.exitCode = 1;
@@ -245,7 +251,7 @@ const main = async () => {
     }
 
     case "list": {
-      const repoRootForList = await getRepoRoot(adapter);
+      const repoRootForList = await getMainRepoRoot(adapter);
       const dbWorktrees = await getWorktrees(adapter, repoRootForList);
       const gitWorktrees = await listWorktrees(adapter);
       const gitByPath = new Map(gitWorktrees.map((wt) => [wt.path, wt.branch]));

@@ -1,5 +1,5 @@
 import type { RuntimeAdapter } from "../runtime/adapter.js";
-import { listWorktrees } from "./worktree.js";
+import { getWorktreeRoot, listWorktrees } from "./worktree.js";
 
 const VALID_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/;
 
@@ -22,6 +22,14 @@ export const isMainWorktree = async (
   const worktrees = await listWorktrees(adapter);
   const target = worktrees.find((wt) => wt.path === worktreePath);
   return target?.isMain ?? false;
+};
+
+export const isCurrentWorktree = async (
+  adapter: RuntimeAdapter,
+  worktreePath: string,
+): Promise<boolean> => {
+  const cwd = await getWorktreeRoot(adapter);
+  return cwd === worktreePath;
 };
 
 export const canSafelyRemove = async (
