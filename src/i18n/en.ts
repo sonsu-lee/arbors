@@ -19,6 +19,7 @@ export interface Messages {
   worktreeNotFound: string;
   uncommittedChanges: string;
   cannotDeleteMain: string;
+  cannotRemoveCurrent: string;
   forceRemoving: string;
   invalidName: string;
   switching: string;
@@ -54,6 +55,7 @@ export const en: Messages = {
   worktreeNotFound: "Worktree not found.",
   uncommittedChanges: "Worktree has uncommitted changes. Commit or stash them first.",
   cannotDeleteMain: "Cannot delete the main worktree.",
+  cannotRemoveCurrent: "Cannot remove the worktree you are currently in.",
   forceRemoving: "Force removing worktree with uncommitted changes...",
   invalidName: "Invalid worktree name.",
   switching: "Switching...",
