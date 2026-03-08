@@ -1,6 +1,6 @@
 import { basename, join } from "node:path";
-import type { RuntimeAdapter } from "../runtime/adapter.js";
-import { getMainRepoRoot } from "./worktree.js";
+import type { RuntimeAdapter } from "../runtime/adapter";
+import { getMainRepoRoot } from "./worktree";
 
 /**
  * Convert a glob-like pattern to a RegExp.

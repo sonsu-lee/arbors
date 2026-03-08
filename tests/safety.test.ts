@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { validateWorktreeName, isCurrentWorktree } from "../src/git/safety.js";
-import type { RuntimeAdapter } from "../src/runtime/adapter.js";
+import { validateWorktreeName, isCurrentWorktree } from "../src/git/safety";
+import type { RuntimeAdapter } from "../src/runtime/adapter";
 
 const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdapter => ({
   exec: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),

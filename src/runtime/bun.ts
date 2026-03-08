@@ -1,5 +1,5 @@
 import { dirname } from "node:path";
-import type { RuntimeAdapter } from "./adapter.js";
+import type { RuntimeAdapter } from "./adapter";
 
 export const createBunAdapter = (): RuntimeAdapter => ({
   async exec(cmd, args) {

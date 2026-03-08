@@ -1,7 +1,7 @@
 import chalk from "chalk";
-import { loadConfig } from "../src/config.js";
-import { copyIgnoredFiles } from "../src/git/exclude.js";
-import { validateWorktreeName, canSafelyRemove, isCurrentWorktree, isMainWorktree } from "../src/git/safety.js";
+import { loadConfig } from "../src/config";
+import { copyIgnoredFiles } from "../src/git/exclude";
+import { validateWorktreeName, canSafelyRemove, isCurrentWorktree, isMainWorktree } from "../src/git/safety";
 import {
   branchExists,
   checkoutRemoteWorktree,
@@ -11,11 +11,11 @@ import {
   listWorktrees,
   remoteBranchExists,
   removeWorktree,
-} from "../src/git/worktree.js";
-import { loadMessages } from "../src/i18n/index.js";
-import { getWorktrees, registerProject, registerWorktree, unregisterWorktree } from "../src/project/registry.js";
-import { runSetup } from "../src/project/setup.js";
-import { createAdapter } from "../src/runtime/index.js";
+} from "../src/git/worktree";
+import { loadMessages } from "../src/i18n/index";
+import { getWorktrees, registerProject, registerWorktree, unregisterWorktree } from "../src/project/registry";
+import { runSetup } from "../src/project/setup";
+import { createAdapter } from "../src/runtime/index";
 
 const parseArgs = (argv: string[]) => {
   const args = argv.slice(2);

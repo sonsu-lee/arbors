@@ -6,8 +6,8 @@ import {
   registerWorktree,
   removeProject,
   unregisterWorktree,
-} from "../src/project/registry.js";
-import type { RuntimeAdapter } from "../src/runtime/adapter.js";
+} from "../src/project/registry";
+import type { RuntimeAdapter } from "../src/runtime/adapter";
 
 const createMockAdapter = (): RuntimeAdapter & { files: Map<string, string> } => {
   const files = new Map<string, string>();

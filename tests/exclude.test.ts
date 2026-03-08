@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { matchesPattern, getIgnoredFiles, copyIgnoredFiles } from "../src/git/exclude.js";
-import type { RuntimeAdapter } from "../src/runtime/adapter.js";
+import { matchesPattern, getIgnoredFiles, copyIgnoredFiles } from "../src/git/exclude";
+import type { RuntimeAdapter } from "../src/runtime/adapter";
 
 const MAIN_PORCELAIN = "worktree /repo\nHEAD abc\nbranch refs/heads/main";
 

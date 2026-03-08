@@ -1,5 +1,5 @@
-import type { Messages } from "./en.js";
-import { en } from "./en.js";
+import type { Messages } from "./en";
+import { en } from "./en";
 
 export type { Messages };
 

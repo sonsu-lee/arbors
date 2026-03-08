@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { RuntimeAdapter } from "../runtime/adapter.js";
+import type { RuntimeAdapter } from "../runtime/adapter";
 
 type PackageManager = "pnpm" | "yarn" | "npm" | null;
 type RuntimeManager = "mise" | "nvm" | null;

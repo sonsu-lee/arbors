@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Box, Text, useApp } from "ink";
-import { ProjectSelector } from "./ProjectSelector.js";
-import { WorktreeSelector } from "./WorktreeSelector.js";
-import type { ProjectEntry } from "../project/registry.js";
-import type { WorktreeInfo } from "../git/worktree.js";
-import type { Messages } from "../i18n/en.js";
-import type { RuntimeAdapter } from "../runtime/adapter.js";
+import { ProjectSelector } from "./ProjectSelector";
+import { WorktreeSelector } from "./WorktreeSelector";
+import type { ProjectEntry } from "../project/registry";
+import type { WorktreeInfo } from "../git/worktree";
+import type { Messages } from "../i18n/en";
+import type { RuntimeAdapter } from "../runtime/adapter";
 
 type AppState =
   | { phase: "project"; projects: ProjectEntry[] }

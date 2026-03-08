@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { loadMessages } from "../src/i18n/index.js";
+import { loadMessages } from "../src/i18n/index";
 
 describe("i18n", () => {
   beforeEach(() => {

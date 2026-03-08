@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { detectPackageManager, detectRuntimeManager } from "../src/project/setup.js";
-import type { RuntimeAdapter } from "../src/runtime/adapter.js";
+import { detectPackageManager, detectRuntimeManager } from "../src/project/setup";
+import type { RuntimeAdapter } from "../src/runtime/adapter";
 
 const createMockAdapter = (existingFiles: string[]): RuntimeAdapter => ({
   exec: vi.fn(),

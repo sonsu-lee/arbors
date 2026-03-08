@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { runSetup } from "../src/project/setup.js";
-import type { RuntimeAdapter } from "../src/runtime/adapter.js";
+import { runSetup } from "../src/project/setup";
+import type { RuntimeAdapter } from "../src/runtime/adapter";
 
 const createMockAdapter = (existingFiles: string[], execLog: { cmd: string[]; cwd?: string }[] = []): RuntimeAdapter => ({
   exec: vi.fn(async (cmd: string, args: string[], options?: { cwd?: string }) => {
