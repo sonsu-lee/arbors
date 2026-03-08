@@ -1,9 +1,9 @@
 import React from "react";
 import { Text } from "ink";
-import { FuzzyList } from "./FuzzyList.js";
-import type { FuzzyListItem } from "./FuzzyList.js";
-import type { WorktreeInfo } from "../git/worktree.js";
-import type { Messages } from "../i18n/en.js";
+import { FuzzyList } from "./FuzzyList";
+import type { FuzzyListItem } from "./FuzzyList";
+import type { WorktreeInfo } from "../git/worktree";
+import type { Messages } from "../i18n/en";
 
 interface WorktreeSelectorProps {
   worktrees: WorktreeInfo[];

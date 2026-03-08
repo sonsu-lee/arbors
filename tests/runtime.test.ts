@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createAdapter } from "../src/runtime/index.js";
+import { createAdapter } from "../src/runtime/index";
 
 describe("createAdapter", () => {
   it("should return a node adapter when runtime is node", async () => {

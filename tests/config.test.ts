@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { mergeConfig, loadConfig } from "../src/config.js";
-import type { ArborConfig } from "../src/config.js";
+import { mergeConfig, loadConfig } from "../src/config";
+import type { ArborConfig } from "../src/config";
 
 describe("mergeConfig", () => {
   it("should override base values with override values", () => {
