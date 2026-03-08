@@ -1,6 +1,6 @@
 import { basename, join } from "node:path";
 import type { RuntimeAdapter } from "../runtime/adapter.js";
-import { getRepoRoot } from "./worktree.js";
+import { getMainRepoRoot } from "./worktree.js";
 
 /**
  * Convert a glob-like pattern to a RegExp.
@@ -43,7 +43,7 @@ export const copyIgnoredFiles = async (
   worktreePath: string,
   excludePatterns: string[],
 ): Promise<string[]> => {
-  const repoRoot = await getRepoRoot(adapter);
+  const repoRoot = await getMainRepoRoot(adapter);
   const allIgnored = await getIgnoredFiles(adapter);
   const entries = allIgnored.filter((f) => !excludePatterns.some((p) => matchesPattern(f, p)));
 

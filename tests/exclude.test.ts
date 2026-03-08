@@ -2,8 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import { matchesPattern, getIgnoredFiles, copyIgnoredFiles } from "../src/git/exclude.js";
 import type { RuntimeAdapter } from "../src/runtime/adapter.js";
 
+const MAIN_PORCELAIN = "worktree /repo\nHEAD abc\nbranch refs/heads/main";
+
 const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdapter => ({
-  exec: vi.fn(async () => ({ stdout: "/repo", stderr: "", exitCode: 0 })),
+  exec: vi.fn(async () => ({ stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 })),
   glob: vi.fn(async () => []),
   readFile: vi.fn(async () => ""),
   writeFile: vi.fn(),
@@ -44,7 +46,7 @@ describe("getIgnoredFiles", () => {
         if (args?.[0] === "ls-files") {
           return { stdout: ".env\n.env.local\nfrontend/.env.development.local\n", stderr: "", exitCode: 0 };
         }
-        return { stdout: "/repo", stderr: "", exitCode: 0 };
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }),
     });
 
@@ -58,7 +60,7 @@ describe("getIgnoredFiles", () => {
         if (args?.[0] === "ls-files") {
           return { stdout: "", stderr: "error", exitCode: 1 };
         }
-        return { stdout: "/repo", stderr: "", exitCode: 0 };
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }),
     });
 
@@ -79,7 +81,7 @@ describe("copyIgnoredFiles", () => {
             exitCode: 0,
           };
         }
-        return { stdout: "/repo", stderr: "", exitCode: 0 };
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }),
       copy: copyFn,
     });
@@ -100,7 +102,7 @@ describe("copyIgnoredFiles", () => {
         if (args?.[0] === "ls-files") {
           return { stdout: ".env\nCLAUDE.md\n", stderr: "", exitCode: 0 };
         }
-        return { stdout: "/repo", stderr: "", exitCode: 0 };
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }),
       copy: copyFn,
     });
@@ -116,7 +118,7 @@ describe("copyIgnoredFiles", () => {
         if (args?.[0] === "ls-files") {
           return { stdout: ".env\n.env.local\n", stderr: "", exitCode: 0 };
         }
-        return { stdout: "/repo", stderr: "", exitCode: 0 };
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }),
       copy: vi.fn(async (src: string) => {
         if (src === "/repo/.env.local") throw new Error("socket");

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  getRepoRoot,
+  getWorktreeRoot,
+  getMainRepoRoot,
   getRepoName,
   getDefaultBranch,
   listWorktrees,
@@ -24,13 +25,13 @@ const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdap
   ...overrides,
 });
 
-describe("getRepoRoot", () => {
-  it("should return the repo root path", async () => {
+describe("getWorktreeRoot", () => {
+  it("should return the current worktree root path", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "/home/user/project", stderr: "", exitCode: 0 })),
     });
 
-    const root = await getRepoRoot(adapter);
+    const root = await getWorktreeRoot(adapter);
     expect(root).toBe("/home/user/project");
   });
 
@@ -39,14 +40,49 @@ describe("getRepoRoot", () => {
       exec: vi.fn(async () => ({ stdout: "", stderr: "fatal", exitCode: 128 })),
     });
 
-    await expect(getRepoRoot(adapter)).rejects.toThrow("Not a git repository");
+    await expect(getWorktreeRoot(adapter)).rejects.toThrow("Not a git repository");
+  });
+});
+
+describe("getMainRepoRoot", () => {
+  it("should return the main worktree path", async () => {
+    const porcelainOutput = [
+      "worktree /home/user/project",
+      "HEAD abc1234",
+      "branch refs/heads/main",
+      "",
+      "worktree /home/user/arbors/project/feature-x",
+      "HEAD def5678",
+      "branch refs/heads/feature/x",
+    ].join("\n");
+
+    const adapter = createMockAdapter({
+      exec: vi.fn(async () => ({ stdout: porcelainOutput, stderr: "", exitCode: 0 })),
+    });
+
+    const root = await getMainRepoRoot(adapter);
+    expect(root).toBe("/home/user/project");
+  });
+
+  it("should throw when not in a git repository", async () => {
+    const adapter = createMockAdapter({
+      exec: vi.fn(async () => ({ stdout: "", stderr: "error", exitCode: 1 })),
+    });
+
+    await expect(getMainRepoRoot(adapter)).rejects.toThrow("Not a git repository");
   });
 });
 
 describe("getRepoName", () => {
-  it("should return the basename of the repo root", async () => {
+  it("should return the basename of the main repo root", async () => {
+    const porcelainOutput = [
+      "worktree /home/user/my-project",
+      "HEAD abc1234",
+      "branch refs/heads/main",
+    ].join("\n");
+
     const adapter = createMockAdapter({
-      exec: vi.fn(async () => ({ stdout: "/home/user/my-project", stderr: "", exitCode: 0 })),
+      exec: vi.fn(async () => ({ stdout: porcelainOutput, stderr: "", exitCode: 0 })),
     });
 
     const name = await getRepoName(adapter);
@@ -158,12 +194,14 @@ describe("remoteBranchExists", () => {
   });
 });
 
+const MAIN_PORCELAIN = "worktree /home/user/project\nHEAD abc\nbranch refs/heads/main";
+
 describe("createWorktree", () => {
   it("should create a new branch worktree and unset upstream", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
-      // getRepoRoot
-      if (args?.[0] === "rev-parse" && args?.[1] === "--show-toplevel") {
-        return { stdout: "/home/user/project", stderr: "", exitCode: 0 };
+      // getRepoName → getMainRepoRoot → listWorktrees
+      if (args?.[0] === "worktree" && args?.[1] === "list") {
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }
       // getDefaultBranch
       if (args?.[0] === "symbolic-ref") {
@@ -192,8 +230,8 @@ describe("createWorktree", () => {
 
   it("should throw when branch already exists", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
-      if (args?.[0] === "rev-parse" && args?.[1] === "--show-toplevel") {
-        return { stdout: "/home/user/project", stderr: "", exitCode: 0 };
+      if (args?.[0] === "worktree" && args?.[1] === "list") {
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }
       if (args?.[0] === "symbolic-ref") {
         return { stdout: "refs/remotes/origin/main", stderr: "", exitCode: 0 };
@@ -213,8 +251,8 @@ describe("createWorktree", () => {
 
   it("should use specified base branch", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
-      if (args?.[0] === "rev-parse" && args?.[1] === "--show-toplevel") {
-        return { stdout: "/home/user/project", stderr: "", exitCode: 0 };
+      if (args?.[0] === "worktree" && args?.[1] === "list") {
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }
       if (args?.[0] === "rev-parse" && args?.[1] === "--verify") {
         return { stdout: "", stderr: "", exitCode: 1 };
@@ -230,7 +268,9 @@ describe("createWorktree", () => {
     expect(fetchCall?.[1]).toEqual(["fetch", "origin", "develop"]);
 
     // Should use origin/develop as start point
-    const addCall = execFn.mock.calls.find((call) => call[1]?.[0] === "worktree");
+    const addCall = execFn.mock.calls.find(
+      (call) => call[1]?.[0] === "worktree" && call[1]?.[1] === "add",
+    );
     expect(addCall?.[1]).toContain("origin/develop");
   });
 });
@@ -261,14 +301,7 @@ describe("checkoutWorktree", () => {
   it("should create worktree when not already checked out", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "worktree" && args?.[1] === "list") {
-        return {
-          stdout: "worktree /home/user/project\nHEAD abc\nbranch refs/heads/main",
-          stderr: "",
-          exitCode: 0,
-        };
-      }
-      if (args?.[0] === "rev-parse" && args?.[1] === "--show-toplevel") {
-        return { stdout: "/home/user/project", stderr: "", exitCode: 0 };
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }
       return { stdout: "", stderr: "", exitCode: 0 };
     });
@@ -307,14 +340,7 @@ describe("checkoutRemoteWorktree", () => {
   it("should fetch and create worktree for remote branch", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "worktree" && args?.[1] === "list") {
-        return {
-          stdout: "worktree /home/user/project\nHEAD abc\nbranch refs/heads/main",
-          stderr: "",
-          exitCode: 0,
-        };
-      }
-      if (args?.[0] === "rev-parse" && args?.[1] === "--show-toplevel") {
-        return { stdout: "/home/user/project", stderr: "", exitCode: 0 };
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }
       return { stdout: "", stderr: "", exitCode: 0 };
     });
@@ -329,7 +355,9 @@ describe("checkoutRemoteWorktree", () => {
     expect(fetchCall?.[1]).toEqual(["fetch", "origin", "feature/api"]);
 
     // Should create with -b and origin/branch
-    const addCall = execFn.mock.calls.find((call) => call[1]?.[0] === "worktree" && call[1]?.[1] === "add");
+    const addCall = execFn.mock.calls.find(
+      (call) => call[1]?.[0] === "worktree" && call[1]?.[1] === "add",
+    );
     expect(addCall?.[1]).toContain("-b");
     expect(addCall?.[1]).toContain("origin/feature/api");
   });
