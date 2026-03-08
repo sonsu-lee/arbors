@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/sonsu-lee/arbors/compare/arbors-v1.0.0...arbors-v1.1.0) (2026-03-08)
+
+
+### Features
+
+* add cwd option to RuntimeAdapter.exec ([b59f1b4](https://github.com/sonsu-lee/arbors/commit/b59f1b4583f3455dd6d0e9f059fae0d7d0494938))
+* detect main repo context from linked worktrees ([63c3350](https://github.com/sonsu-lee/arbors/commit/63c335060f14aa9f848ad11d2246e4a7ff1a6380))
+
+
+### Bug Fixes
+
+* add repository url to package.json for npm provenance ([56fef0e](https://github.com/sonsu-lee/arbors/commit/56fef0eab839e514d51edbf9897203d53377c798))
+* correct onlyBuiltDependencies format in pnpm-workspace.yaml ([518bc14](https://github.com/sonsu-lee/arbors/commit/518bc144abff5e1e7b756605556f7ebfd663a5e6))
+* pass project root to loadConfig for project-level config ([067aa06](https://github.com/sonsu-lee/arbors/commit/067aa065aa897d10fe5a815d3d95730cd377571a))
+
 ## [1.0.0](https://github.com/sonsu-lee/arbors/compare/arbors-v0.1.1...arbors-v1.0.0) (2026-03-05)
 
 
