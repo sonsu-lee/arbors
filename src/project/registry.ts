@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { RuntimeAdapter } from "../runtime/adapter.js";
+import type { RuntimeAdapter } from "../runtime/adapter";
 
 export interface ProjectEntry {
   name: string;

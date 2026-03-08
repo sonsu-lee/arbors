@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { basename, resolve } from "node:path";
-import type { RuntimeAdapter } from "../runtime/adapter.js";
+import type { RuntimeAdapter } from "../runtime/adapter";
 
 export interface WorktreeInfo {
   path: string;

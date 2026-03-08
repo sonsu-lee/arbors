@@ -1,4 +1,4 @@
-import type { Messages } from "./en.js";
+import type { Messages } from "./en";
 
 export const ko: Messages = {
   selectProject: "프로젝트를 선택하세요:",

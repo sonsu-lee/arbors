@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { cp, glob, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { RuntimeAdapter } from "./adapter.js";
+import type { RuntimeAdapter } from "./adapter";
 
 export const createNodeAdapter = (): RuntimeAdapter => ({
   async exec(cmd, args) {

@@ -1,6 +1,6 @@
-import type { RuntimeAdapter } from "./adapter.js";
+import type { RuntimeAdapter } from "./adapter";
 
-export type { ExecResult, RuntimeAdapter } from "./adapter.js";
+export type { ExecResult, RuntimeAdapter } from "./adapter";
 
 const isBun = (): boolean => Object.hasOwn(process.versions, "bun");
 

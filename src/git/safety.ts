@@ -1,5 +1,5 @@
-import type { RuntimeAdapter } from "../runtime/adapter.js";
-import { getWorktreeRoot, listWorktrees } from "./worktree.js";
+import type { RuntimeAdapter } from "../runtime/adapter";
+import { getWorktreeRoot, listWorktrees } from "./worktree";
 
 const VALID_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/;
 
