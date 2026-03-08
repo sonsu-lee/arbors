@@ -1,5 +1,17 @@
-import { describe, it, expect } from "vitest";
-import { validateWorktreeName } from "../src/git/safety.js";
+import { describe, it, expect, vi } from "vitest";
+import { validateWorktreeName, isCurrentWorktree } from "../src/git/safety.js";
+import type { RuntimeAdapter } from "../src/runtime/adapter.js";
+
+const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdapter => ({
+  exec: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),
+  glob: vi.fn(async () => []),
+  readFile: vi.fn(async () => ""),
+  writeFile: vi.fn(),
+  exists: vi.fn(async () => true),
+  copy: vi.fn(),
+  mkdir: vi.fn(),
+  ...overrides,
+});
 
 describe("validateWorktreeName", () => {
   it("should accept valid alphanumeric names", () => {
@@ -54,5 +66,31 @@ describe("validateWorktreeName", () => {
     names.forEach((name) => {
       expect(validateWorktreeName(name)).toBe(false);
     });
+  });
+});
+
+describe("isCurrentWorktree", () => {
+  it("should return true when cwd matches worktree path", async () => {
+    const adapter = createMockAdapter({
+      exec: vi.fn(async () => ({
+        stdout: "/home/user/arbors/project/feature-x",
+        stderr: "",
+        exitCode: 0,
+      })),
+    });
+
+    expect(await isCurrentWorktree(adapter, "/home/user/arbors/project/feature-x")).toBe(true);
+  });
+
+  it("should return false when cwd differs from worktree path", async () => {
+    const adapter = createMockAdapter({
+      exec: vi.fn(async () => ({
+        stdout: "/home/user/project",
+        stderr: "",
+        exitCode: 0,
+      })),
+    });
+
+    expect(await isCurrentWorktree(adapter, "/home/user/arbors/project/feature-x")).toBe(false);
   });
 });
