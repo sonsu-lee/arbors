@@ -21,6 +21,7 @@ export interface Messages {
   cannotDeleteMain: string;
   cannotRemoveCurrent: string;
   forceRemoving: string;
+  removeSummary: (removed: number, failed: number) => string;
   invalidName: string;
   switching: string;
   switched: string;
@@ -57,6 +58,7 @@ export const en: Messages = {
   cannotDeleteMain: "Cannot delete the main worktree.",
   cannotRemoveCurrent: "Cannot remove the worktree you are currently in.",
   forceRemoving: "Force removing worktree with uncommitted changes...",
+  removeSummary: (removed, failed) => `Summary: ${removed} removed, ${failed} failed`,
   invalidName: "Invalid worktree name.",
   switching: "Switching...",
   switched: "Switched to worktree",

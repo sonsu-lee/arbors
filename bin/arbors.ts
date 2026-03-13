@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { loadConfig } from "../src/config";
 import { copyIgnoredFiles } from "../src/git/exclude";
-import { validateWorktreeName, canSafelyRemove, isCurrentWorktree, isMainWorktree } from "../src/git/safety";
+import { validateWorktreeName, hasUncommittedChanges } from "../src/git/safety";
 import {
   branchExists,
   checkoutRemoteWorktree,
@@ -34,9 +34,9 @@ const parseArgs = (argv: string[]) => {
     return acc;
   }, {});
 
-  const name = args.slice(1).find((a) => !a.startsWith("-"));
+  const names = args.slice(1).filter((a) => !a.startsWith("-") && !Object.values(flags).includes(a));
 
-  return { command, name, flags };
+  return { command, names, flags };
 };
 
 const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
@@ -48,7 +48,7 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  add <branch>                    Checkout existing branch (local or remote)");
   console.log("  add -c <branch> [--base <br>]   Create a new branch worktree");
   console.log("  switch <branch>                 Switch to existing worktree");
-  console.log("  remove (-r) <branch> [-f]        Remove a worktree");
+  console.log("  remove (-r) <branch...> [-f]    Remove worktree(s)");
   console.log("  list                            List worktrees");
   console.log("  excluded                        Show exclude-from-copy patterns");
   console.log("  config                          Show current config");
@@ -73,7 +73,8 @@ const getProjectRoot = async (): Promise<string | undefined> => {
 };
 
 const main = async () => {
-  const { command, name, flags } = parseArgs(process.argv);
+  const { command, names, flags } = parseArgs(process.argv);
+  const name = names[0];
   const projectRoot = await getProjectRoot();
   const config = await loadConfig(
     async (p) => {
@@ -220,8 +221,9 @@ const main = async () => {
 
     case "-r":
     case "remove": {
-      if (!name) {
-        console.error(chalk.red("✗ Usage: arbors remove <branch>"));
+      const branches = [...new Set(names)];
+      if (branches.length === 0) {
+        console.error(chalk.red("✗ Usage: arbors remove <branch> [branch...]"));
         process.exitCode = 1;
         return;
       }
@@ -230,44 +232,71 @@ const main = async () => {
       console.log(chalk.cyan.bold("arbors remove"));
       console.log();
 
-      // Find the worktree by branch name
       const worktrees = await listWorktrees(adapter);
-      const target = worktrees.find((wt) => wt.branch === name);
+      const currentRoot = await adapter.exec("git", ["rev-parse", "--show-toplevel"]);
+      const cwd = currentRoot.exitCode === 0 ? currentRoot.stdout : "";
 
-      if (!target) {
-        console.error(chalk.red(`✗ No worktree found for branch '${name}'`));
-        process.exitCode = 1;
-        return;
-      }
+      let removed = 0;
+      let failed = 0;
 
-      if (await isCurrentWorktree(adapter, target.path)) {
-        console.error(chalk.red(`✗ ${msg.cannotRemoveCurrent}`));
-        process.exitCode = 1;
-        return;
-      }
+      for (const branch of branches) {
+        console.log(chalk.gray(`Removing ${branch}...`));
 
-      if (await isMainWorktree(adapter, target.path)) {
-        console.error(chalk.red(`✗ ${msg.cannotDeleteMain}`));
-        process.exitCode = 1;
-        return;
-      }
-
-      if (flags.force) {
-        console.log(chalk.yellow(`⚠ ${msg.forceRemoving}`));
-      } else {
-        const { safe, reason } = await canSafelyRemove(adapter, target.path);
-        if (!safe) {
-          const errorMsg = reason ? msg[reason as keyof typeof msg] : "Cannot remove";
-          console.error(chalk.red(`✗ ${errorMsg}`));
-          process.exitCode = 1;
-          return;
+        const target = worktrees.find((wt) => wt.branch === branch);
+        if (!target) {
+          console.error(chalk.red(`✗ No worktree found for branch '${branch}'`));
+          failed++;
+          console.log();
+          continue;
         }
+
+        if (target.path === cwd) {
+          console.error(chalk.red(`✗ ${msg.cannotRemoveCurrent}: ${branch}`));
+          failed++;
+          console.log();
+          continue;
+        }
+
+        if (target.isMain) {
+          console.error(chalk.red(`✗ ${msg.cannotDeleteMain}: ${branch}`));
+          failed++;
+          console.log();
+          continue;
+        }
+
+        if (flags.force) {
+          console.log(chalk.yellow(`⚠ ${msg.forceRemoving}`));
+        } else {
+          const hasChanges = await hasUncommittedChanges(adapter, target.path);
+          if (hasChanges) {
+            console.error(chalk.red(`✗ ${msg.uncommittedChanges}: ${branch}`));
+            failed++;
+            console.log();
+            continue;
+          }
+        }
+
+        try {
+          await withSpinner(msg.removing, async () => {
+            await removeWorktree(adapter, target.path, target.branch);
+            await unregisterWorktree(adapter, target.path);
+          });
+          console.log(chalk.green(`✓ ${msg.removed}: ${branch}`));
+          removed++;
+        } catch (err) {
+          console.error(chalk.red(`✗ ${(err as Error).message}`));
+          failed++;
+        }
+        console.log();
       }
-      await withSpinner(msg.removing, async () => {
-        await removeWorktree(adapter, target.path, target.branch);
-        await unregisterWorktree(adapter, target.path);
-      });
-      console.log(chalk.green(`✓ ${msg.removed}: ${name}`));
+
+      if (branches.length > 1) {
+        console.log(msg.removeSummary(removed, failed));
+      }
+
+      if (failed > 0) {
+        process.exitCode = 1;
+      }
       break;
     }
 
