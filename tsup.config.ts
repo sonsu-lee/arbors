@@ -8,6 +8,16 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   noExternal: [/.*/],
+  esbuildPlugins: [
+    {
+      name: "external-devtools",
+      setup(build) {
+        build.onResolve({ filter: /^react-devtools-core$/ }, () => ({
+          external: true,
+        }));
+      },
+    },
+  ],
   banner: {
     js: "#!/usr/bin/env node",
   },
