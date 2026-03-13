@@ -8,13 +8,19 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   noExternal: [/.*/],
+  splitting: false,
   esbuildPlugins: [
     {
-      name: "external-devtools",
+      name: "stub-devtools",
       setup(build) {
-        build.onResolve({ filter: /^react-devtools-core$/ }, () => ({
-          external: true,
+        build.onResolve({ filter: /^react-devtools-core$/ }, (args) => ({
+          path: args.path,
+          namespace: "stub-devtools",
         }));
+        build.onLoad(
+          { filter: /.*/, namespace: "stub-devtools" },
+          () => ({ contents: "export default {}" }),
+        );
       },
     },
   ],
