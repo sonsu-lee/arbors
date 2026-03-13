@@ -27,6 +27,7 @@ export const ko: Messages = {
   cannotDeleteMain: "메인 워크트리는 삭제할 수 없습니다.",
   cannotRemoveCurrent: "현재 위치한 워크트리는 삭제할 수 없습니다.",
   forceRemoving: "커밋되지 않은 변경사항을 무시하고 워크트리를 강제 삭제합니다...",
+  removeSummary: (removed, failed) => `결과: ${removed}개 삭제, ${failed}개 실패`,
   invalidName: "올바르지 않은 워크트리 이름입니다.",
   switching: "워크트리 이동 중...",
   switched: "워크트리로 이동 완료",

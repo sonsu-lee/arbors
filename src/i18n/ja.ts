@@ -27,6 +27,7 @@ export const ja: Messages = {
   cannotDeleteMain: "メインワークツリーは削除できません。",
   cannotRemoveCurrent: "現在いるワークツリーは削除できません。",
   forceRemoving: "コミットされていない変更を無視してワークツリーを強制削除します...",
+  removeSummary: (removed, failed) => `結果: ${removed}件削除、${failed}件失敗`,
   invalidName: "無効なワークツリー名です。",
   switching: "ワークツリーに移動中...",
   switched: "ワークツリーに移動しました",
