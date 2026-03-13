@@ -9,8 +9,11 @@ const ENTRY = resolve(DIST, "arbors.js");
 let bundleContent: string;
 
 beforeAll(async () => {
+  execFileSync("pnpm", ["build"], {
+    cwd: resolve(import.meta.dirname, ".."),
+  });
   bundleContent = await readFile(ENTRY, "utf-8");
-});
+}, 30_000);
 
 describe("bundle output", () => {
   it("should produce a single entry file without chunks", async () => {
