@@ -16,6 +16,7 @@ import { loadMessages } from "../src/i18n/index";
 import { getWorktrees, registerProject, registerWorktree, unregisterWorktree } from "../src/project/registry";
 import { runSetup } from "../src/project/setup";
 import { createAdapter } from "../src/runtime/index";
+import { withSpinner } from "../src/tui/withSpinner";
 
 const parseArgs = (argv: string[]) => {
   const args = argv.slice(2);
@@ -127,22 +128,25 @@ const main = async () => {
 
       if (flags.create) {
         // arbors add -c <branch> [--base main]
-        console.log(chalk.gray(msg.creating));
-        worktreePath = await createWorktree(adapter, name, config.worktreeDir, flags.base);
+        worktreePath = await withSpinner(msg.creating, () =>
+          createWorktree(adapter, name, config.worktreeDir, flags.base),
+        );
         created = true;
         newBranch = true;
         console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
         console.log(chalk.gray(`  Branch: ${name} (from ${flags.base ?? "default"})`));
       } else if (await branchExists(adapter, name)) {
-        console.log(chalk.gray(`Checking out ${name}...`));
-        const result = await checkoutWorktree(adapter, name, config.worktreeDir);
+        const result = await withSpinner(`Checking out ${name}...`, () =>
+          checkoutWorktree(adapter, name, config.worktreeDir),
+        );
         worktreePath = result.path;
         created = result.created;
         console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
         console.log(chalk.gray(`  Branch: ${name}`));
       } else if (await remoteBranchExists(adapter, name)) {
-        console.log(chalk.gray(`Fetching ${name} from origin...`));
-        const result = await checkoutRemoteWorktree(adapter, name, config.worktreeDir);
+        const result = await withSpinner(`Fetching ${name} from origin...`, () =>
+          checkoutRemoteWorktree(adapter, name, config.worktreeDir),
+        );
         worktreePath = result.path;
         created = result.created;
         newBranch = result.created;
@@ -158,13 +162,15 @@ const main = async () => {
 
       try {
         console.log();
-        console.log(chalk.gray(msg.copying));
-        const copied = await copyIgnoredFiles(adapter, worktreePath, config.excludeFromCopy);
+        const copied = await withSpinner(msg.copying, () =>
+          copyIgnoredFiles(adapter, worktreePath, config.excludeFromCopy),
+        );
         console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
 
         console.log();
-        console.log(chalk.gray(msg.installing));
-        await runSetup(adapter, worktreePath, config.packageManager);
+        await withSpinner(msg.installing, () =>
+          runSetup(adapter, worktreePath, config.packageManager),
+        );
         console.log(chalk.green(`✓ ${msg.installed}`));
 
         const repoRoot = await getMainRepoRoot(adapter);
@@ -256,10 +262,11 @@ const main = async () => {
           process.exitCode = 1;
           return;
         }
-        console.log(chalk.gray(msg.removing));
       }
-      await removeWorktree(adapter, target.path, target.branch);
-      await unregisterWorktree(adapter, target.path);
+      await withSpinner(msg.removing, async () => {
+        await removeWorktree(adapter, target.path, target.branch);
+        await unregisterWorktree(adapter, target.path);
+      });
       console.log(chalk.green(`✓ ${msg.removed}: ${name}`));
       break;
     }
