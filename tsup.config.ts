@@ -19,6 +19,10 @@ export default defineConfig({
     },
   ],
   banner: {
-    js: "#!/usr/bin/env node",
+    js: [
+      "#!/usr/bin/env node",
+      'import { createRequire as __arbors_createRequire } from "node:module";',
+      "var require = __arbors_createRequire(import.meta.url);",
+    ].join("\n"),
   },
 });
