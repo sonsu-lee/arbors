@@ -54,6 +54,7 @@ export const copyIgnoredFiles = async (
       const src = join(repoRoot, entry);
       const dest = join(worktreePath, entry);
       try {
+        if (!(await adapter.exists(src))) return;
         await adapter.copy(src, dest);
         copied.push(entry);
       } catch {

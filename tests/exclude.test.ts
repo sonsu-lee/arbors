@@ -128,4 +128,24 @@ describe("copyIgnoredFiles", () => {
     const copied = await copyIgnoredFiles(adapter, "/worktree", []);
     expect(copied).toEqual([".env"]);
   });
+
+  it("should skip entries whose source does not exist", async () => {
+    const copyFn = vi.fn();
+    const adapter = createMockAdapter({
+      exec: vi.fn(async (_cmd: string, args?: string[]) => {
+        if (args?.[0] === "ls-files") {
+          return { stdout: "backend/.env\n.env\n", stderr: "", exitCode: 0 };
+        }
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
+      }),
+      exists: vi.fn(async (path: string) => !path.includes("backend/")),
+      copy: copyFn,
+    });
+
+    const copied = await copyIgnoredFiles(adapter, "/worktree", []);
+
+    expect(copied).toEqual([".env"]);
+    expect(copyFn).toHaveBeenCalledTimes(1);
+    expect(copyFn).not.toHaveBeenCalledWith("/repo/backend/.env", "/worktree/backend/.env");
+  });
 });
