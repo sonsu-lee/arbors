@@ -4,7 +4,7 @@ import type { RuntimeAdapter } from "../runtime/adapter";
 
 export interface WorktreeInfo {
   path: string;
-  branch: string;
+  branch: string | undefined;
   isMain: boolean;
 }
 
@@ -44,7 +44,7 @@ const parseWorktreeBlock = (block: string, isFirst: boolean): WorktreeInfo | nul
   if (!pathLine) return null;
 
   const path = pathLine.slice(9);
-  const branch = branchLine?.slice(7).replace("refs/heads/", "") ?? "";
+  const branch = branchLine ? branchLine.slice(7).replace("refs/heads/", "") : undefined;
 
   return { path, branch, isMain: isFirst };
 };
@@ -167,7 +167,7 @@ export const checkoutRemoteWorktree = async (
 export const removeWorktree = async (
   adapter: RuntimeAdapter,
   worktreePath: string,
-  branch: string,
+  branch: string | undefined,
 ): Promise<void> => {
   const removeResult = await adapter.exec("git", ["worktree", "remove", "--force", worktreePath]);
 
@@ -175,5 +175,7 @@ export const removeWorktree = async (
     throw new Error(removeResult.stderr || "Failed to remove worktree");
   }
 
-  await adapter.exec("git", ["branch", "-D", branch]);
+  if (branch) {
+    await adapter.exec("git", ["branch", "-D", branch]);
+  }
 };

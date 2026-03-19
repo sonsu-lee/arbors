@@ -1,8 +1,10 @@
+import { basename } from "node:path";
 import chalk from "chalk";
 import { loadConfig } from "../src/config";
 import { copyIgnoredFiles } from "../src/git/exclude";
 import { validateWorktreeName, hasUncommittedChanges } from "../src/git/safety";
 import {
+  type WorktreeInfo,
   branchExists,
   checkoutRemoteWorktree,
   checkoutWorktree,
@@ -233,8 +235,24 @@ const main = async () => {
       console.log();
 
       const worktrees = await listWorktrees(adapter);
+      const repoRoot = await getMainRepoRoot(adapter);
+      const dbWorktrees = await getWorktrees(adapter, repoRoot);
       const currentRoot = await adapter.exec("git", ["rev-parse", "--show-toplevel"]);
       const cwd = currentRoot.exitCode === 0 ? currentRoot.stdout : "";
+
+      const findWorktree = (query: string): WorktreeInfo | undefined => {
+        // Match by branch name, full path, or directory name from git
+        const fromGit = worktrees.find(
+          (wt) => wt.branch === query || wt.path === query || basename(wt.path) === query,
+        );
+        if (fromGit) return fromGit;
+
+        // Fallback: match by branch name in registry (handles detached worktrees)
+        const fromDb = dbWorktrees.find((w) => w.branch === query);
+        if (fromDb) return worktrees.find((wt) => wt.path === fromDb.path);
+
+        return undefined;
+      };
 
       let removed = 0;
       let failed = 0;
@@ -242,7 +260,7 @@ const main = async () => {
       for (const branch of branches) {
         console.log(chalk.gray(`Removing ${branch}...`));
 
-        const target = worktrees.find((wt) => wt.branch === branch);
+        const target = findWorktree(branch);
         if (!target) {
           console.error(chalk.red(`✗ No worktree found for branch '${branch}'`));
           failed++;
@@ -317,7 +335,7 @@ const main = async () => {
         .map((wt) => ({ ...wt, branch: gitByPath.get(wt.path) ?? wt.branch }));
 
       if (flags.plain) {
-        managedWorktrees.forEach((wt) => console.log(`${wt.branch}\t${wt.path}`));
+        managedWorktrees.forEach((wt) => console.log(`${wt.branch ?? "(detached)"}\t${wt.path}`));
       } else if (managedWorktrees.length === 0) {
         console.log(chalk.gray(msg.noWorktrees));
       } else {
@@ -325,7 +343,7 @@ const main = async () => {
         console.log(chalk.cyan.bold("arbors list"));
         console.log();
         managedWorktrees.forEach((wt) => {
-          console.log(chalk.white(wt.branch));
+          console.log(chalk.white(wt.branch ?? chalk.yellow("(detached)")));
           console.log(chalk.gray(`  ${wt.path}`));
         });
       }

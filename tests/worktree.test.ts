@@ -148,6 +148,28 @@ describe("listWorktrees", () => {
     ]);
   });
 
+  it("should parse detached worktree with undefined branch", async () => {
+    const porcelainOutput = [
+      "worktree /home/user/project",
+      "HEAD abc1234",
+      "branch refs/heads/main",
+      "",
+      "worktree /home/user/arbors/project/conflict-wt",
+      "HEAD def5678",
+      "detached",
+    ].join("\n");
+
+    const adapter = createMockAdapter({
+      exec: vi.fn(async () => ({ stdout: porcelainOutput, stderr: "", exitCode: 0 })),
+    });
+
+    const worktrees = await listWorktrees(adapter);
+    expect(worktrees).toEqual([
+      { path: "/home/user/project", branch: "main", isMain: true },
+      { path: "/home/user/arbors/project/conflict-wt", branch: undefined, isMain: false },
+    ]);
+  });
+
   it("should return empty array on git command failure", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "", stderr: "error", exitCode: 1 })),
@@ -385,5 +407,20 @@ describe("removeWorktree", () => {
     });
 
     await expect(removeWorktree(adapter, "/path", "branch")).rejects.toThrow("removal failed");
+  });
+
+  it("should skip branch deletion when branch is undefined (detached)", async () => {
+    const execFn = vi.fn(async (_cmd: string, _args?: string[]) => ({ stdout: "", stderr: "", exitCode: 0 }));
+    const adapter = createMockAdapter({ exec: execFn });
+
+    await removeWorktree(adapter, "/home/user/arbors/project/detached-wt", undefined);
+
+    // Should call git worktree remove
+    const removeCall = execFn.mock.calls.find((call) => call[1]?.[0] === "worktree");
+    expect(removeCall?.[1]).toEqual(["worktree", "remove", "--force", "/home/user/arbors/project/detached-wt"]);
+
+    // Should NOT call git branch -D
+    const branchCall = execFn.mock.calls.find((call) => call[1]?.[0] === "branch");
+    expect(branchCall).toBeUndefined();
   });
 });

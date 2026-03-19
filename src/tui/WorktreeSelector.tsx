@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import React from "react";
 import { Text } from "ink";
 import { FuzzyList } from "./FuzzyList";
@@ -25,7 +26,7 @@ export const WorktreeSelector: React.FC<WorktreeSelectorProps> = ({
   }
 
   const items: FuzzyListItem[] = worktrees.map((wt) => ({
-    label: wt.branch,
+    label: wt.branch ?? `(detached) ${basename(wt.path)}`,
     value: wt.path,
   }));
 
