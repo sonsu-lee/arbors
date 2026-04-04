@@ -15,30 +15,80 @@ import {
   removeWorktree,
 } from "../src/git/worktree";
 import { loadMessages } from "../src/i18n/index";
-import { getWorktrees, registerProject, registerWorktree, unregisterWorktree } from "../src/project/registry";
+import {
+  getWorktrees,
+  registerProject,
+  registerWorktree,
+  unregisterWorktree,
+} from "../src/project/registry";
 import { runSetup } from "../src/project/setup";
 import { createAdapter } from "../src/runtime/index";
 import { withSpinner } from "../src/tui/withSpinner";
 
+const matchFlag = (arg: string, flags: Record<string, string>): boolean => {
+  if (arg === "--porcelain") {
+    flags.porcelain = "true";
+    return true;
+  }
+  if (arg === "--plain") {
+    flags.porcelain = "true";
+    flags._plainDeprecated = "true";
+    return true;
+  }
+  if (arg === "--create" || arg === "-c") {
+    flags.create = "true";
+    return true;
+  }
+  if (arg === "-C") {
+    flags.create = "true";
+    flags.forceCreate = "true";
+    return true;
+  }
+  if (arg === "--force" || arg === "-f") {
+    flags.force = "true";
+    return true;
+  }
+  if (arg === "--help" || arg === "-h") {
+    flags.help = "true";
+    return true;
+  }
+  if (arg === "--version" || arg === "-v") {
+    flags.version = "true";
+    return true;
+  }
+  return false;
+};
+
 const parseArgs = (argv: string[]) => {
   const args = argv.slice(2);
-  const command = args[0];
 
-  const flags = args.reduce<Record<string, string>>((acc, arg, i) => {
-    if (arg.startsWith("--") && args[i + 1] && !args[i + 1].startsWith("-")) {
-      acc[arg.slice(2)] = args[i + 1];
+  const flags: Record<string, string> = {};
+  const names: string[] = [];
+  let command: string | undefined;
+
+  for (const arg of args) {
+    if (matchFlag(arg, flags)) continue;
+
+    // Skip unknown flags
+    if (arg.startsWith("-")) continue;
+
+    // First positional is the command, rest are names
+    if (!command) {
+      command = arg;
+    } else {
+      names.push(arg);
     }
-    if (arg === "--plain") acc.plain = "true";
-    if (arg === "--create" || arg === "-c") acc.create = "true";
-    if (arg === "--force" || arg === "-f") acc.force = "true";
-    if (arg === "--help" || arg === "-h") acc.help = "true";
-    if (arg === "--version" || arg === "-v") acc.version = "true";
-    return acc;
-  }, {});
-
-  const names = args.slice(1).filter((a) => !a.startsWith("-") && !Object.values(flags).includes(a));
+  }
 
   return { command, names, flags };
+};
+
+const error = (message: string) => {
+  console.error(chalk.red(`error: ${message}`));
+};
+
+const hint = (message: string) => {
+  console.error(chalk.gray(`hint: ${message}`));
 };
 
 const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
@@ -48,16 +98,19 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log();
   console.log(chalk.white(msg.commands));
   console.log("  add <branch>                    Checkout existing branch (local or remote)");
-  console.log("  add -c <branch> [--base <br>]   Create a new branch worktree");
+  console.log("  add -c <branch> [<start-point>] Create a new branch worktree");
+  console.log("  add -C <branch> [<start-point>] Force create (reset if branch exists)");
   console.log("  switch <branch>                 Switch to existing worktree");
   console.log("  remove (-r) <branch...> [-f]    Remove worktree(s)");
-  console.log("  list                            List worktrees");
+  console.log("  list [--porcelain]              List worktrees");
   console.log("  excluded                        Show exclude-from-copy patterns");
   console.log("  config                          Show current config");
   console.log();
   console.log(chalk.white(msg.options));
+  console.log("  -c                            Create new branch (git switch -c)");
+  console.log("  -C                            Force create (git switch -C)");
   console.log("  -f, --force                   Force remove (skip uncommitted changes check)");
-  console.log("  --plain                       Machine-readable output");
+  console.log("  --porcelain                   Machine-readable stable output");
   console.log("  -h, --help                    Show help");
   console.log("  -v, --version                 Show version");
 };
@@ -65,7 +118,9 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
 const getProjectRoot = async (): Promise<string | undefined> => {
   const { spawn } = await import("node:child_process");
   return new Promise((resolve) => {
-    const proc = spawn("git", ["rev-parse", "--show-toplevel"], { stdio: ["ignore", "pipe", "ignore"] });
+    const proc = spawn("git", ["rev-parse", "--show-toplevel"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
     let stdout = "";
     proc.stdout.on("data", (chunk: Buffer) => {
       stdout += chunk;
@@ -98,6 +153,10 @@ const main = async () => {
   const msg = await loadMessages(config.language);
   const adapter = await createAdapter(config.runtime);
 
+  if (flags._plainDeprecated) {
+    console.error(chalk.yellow("warning: --plain is deprecated, use --porcelain instead"));
+  }
+
   if (flags.version) {
     console.log(msg.version);
     return;
@@ -111,12 +170,16 @@ const main = async () => {
   switch (command) {
     case "add": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: arbors add [-c] <branch> [--base <branch>]"));
-        process.exitCode = 1;
+        error("missing branch name");
+        console.error();
+        console.error("usage: arbors add [-c | -C] <branch> [<start-point>]");
+        console.error("   or: arbors add <existing-branch>");
+        process.exitCode = 2;
         return;
       }
       if (!validateWorktreeName(name)) {
-        console.error(chalk.red(`✗ ${msg.invalidName}`));
+        error(msg.invalidName);
+        hint("Branch names must start with alphanumeric and can contain . _ / -");
         process.exitCode = 1;
         return;
       }
@@ -129,15 +192,17 @@ const main = async () => {
       let created = false;
       let newBranch = false;
 
+      // start-point is the second positional arg: arbors add -c feature main
+      const startPoint = names[1];
+
       if (flags.create) {
-        // arbors add -c <branch> [--base main]
         worktreePath = await withSpinner(msg.creating, () =>
-          createWorktree(adapter, name, config.worktreeDir, flags.base),
+          createWorktree(adapter, name, config.worktreeDir, startPoint),
         );
         created = true;
         newBranch = true;
         console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
-        console.log(chalk.gray(`  Branch: ${name} (from ${flags.base ?? "default"})`));
+        console.log(chalk.gray(`  Branch: ${name} (from ${startPoint ?? "default"})`));
       } else if (await branchExists(adapter, name)) {
         const result = await withSpinner(`Checking out ${name}...`, () =>
           checkoutWorktree(adapter, name, config.worktreeDir),
@@ -156,9 +221,11 @@ const main = async () => {
         console.log(chalk.green(`✓ ${msg.created}: ${worktreePath}`));
         console.log(chalk.gray(`  Branch: ${name} (from origin/${name})`));
       } else {
-        console.error(
-          chalk.red(`✗ Branch '${name}' not found locally or on origin. Use 'arbors add -c' to create.`),
-        );
+        error(`branch '${name}' not found locally or on remote`);
+        hint("To create a new branch, use:");
+        hint(`    arbors add -c ${name}`);
+        hint("To create from a specific base:");
+        hint(`    arbors add -c ${name} main`);
         process.exitCode = 1;
         return;
       }
@@ -180,7 +247,7 @@ const main = async () => {
         await registerProject(adapter, name, repoRoot);
         await registerWorktree(adapter, worktreePath, name, repoRoot);
       } catch (setupErr) {
-        console.error(chalk.red(`✗ ${(setupErr as Error).message}`));
+        error((setupErr as Error).message);
         if (created) {
           console.log(chalk.gray("Rolling back worktree..."));
           await adapter
@@ -201,8 +268,10 @@ const main = async () => {
 
     case "switch": {
       if (!name) {
-        console.error(chalk.red("✗ Usage: arbors switch <branch>"));
-        process.exitCode = 1;
+        error("missing branch name");
+        console.error();
+        console.error("usage: arbors switch <branch>");
+        process.exitCode = 2;
         return;
       }
 
@@ -210,7 +279,11 @@ const main = async () => {
       const target = worktrees.find((wt) => wt.branch === name);
 
       if (!target) {
-        console.error(chalk.red(`✗ ${msg.worktreeNotFound}`));
+        error(`no worktree found for branch '${name}'`);
+        hint("To create a worktree for this branch:");
+        hint(`    arbors add ${name}`);
+        hint("To see available worktrees:");
+        hint("    arbors list");
         process.exitCode = 1;
         return;
       }
@@ -225,8 +298,10 @@ const main = async () => {
     case "remove": {
       const branches = [...new Set(names)];
       if (branches.length === 0) {
-        console.error(chalk.red("✗ Usage: arbors remove <branch> [branch...]"));
-        process.exitCode = 1;
+        error("missing branch name");
+        console.error();
+        console.error("usage: arbors remove [-f] <branch> [<branch>...]");
+        process.exitCode = 2;
         return;
       }
 
@@ -262,21 +337,23 @@ const main = async () => {
 
         const target = findWorktree(branch);
         if (!target) {
-          console.error(chalk.red(`✗ No worktree found for branch '${branch}'`));
+          error(`no worktree found for branch '${branch}'`);
+          hint(`To see available worktrees: arbors list`);
           failed++;
           console.log();
           continue;
         }
 
         if (target.path === cwd) {
-          console.error(chalk.red(`✗ ${msg.cannotRemoveCurrent}: ${branch}`));
+          error(`${msg.cannotRemoveCurrent}: ${branch}`);
+          hint("Switch to another worktree first: arbors switch <branch>");
           failed++;
           console.log();
           continue;
         }
 
         if (target.isMain) {
-          console.error(chalk.red(`✗ ${msg.cannotDeleteMain}: ${branch}`));
+          error(`${msg.cannotDeleteMain}: ${branch}`);
           failed++;
           console.log();
           continue;
@@ -287,7 +364,9 @@ const main = async () => {
         } else {
           const hasChanges = await hasUncommittedChanges(adapter, target.path);
           if (hasChanges) {
-            console.error(chalk.red(`✗ ${msg.uncommittedChanges}: ${branch}`));
+            error(`${msg.uncommittedChanges}: ${branch}`);
+            hint("Use -f to force removal:");
+            hint(`    arbors remove -f ${branch}`);
             failed++;
             console.log();
             continue;
@@ -302,7 +381,7 @@ const main = async () => {
           console.log(chalk.green(`✓ ${msg.removed}: ${branch}`));
           removed++;
         } catch (err) {
-          console.error(chalk.red(`✗ ${(err as Error).message}`));
+          error((err as Error).message);
           failed++;
         }
         console.log();
@@ -334,7 +413,7 @@ const main = async () => {
         .filter((w) => gitByPath.has(w.path))
         .map((wt) => ({ ...wt, branch: gitByPath.get(wt.path) ?? wt.branch }));
 
-      if (flags.plain) {
+      if (flags.porcelain) {
         managedWorktrees.forEach((wt) => console.log(`${wt.branch ?? "(detached)"}\t${wt.path}`));
       } else if (managedWorktrees.length === 0) {
         console.log(chalk.gray(msg.noWorktrees));
@@ -373,14 +452,15 @@ const main = async () => {
     }
 
     default: {
-      console.error(chalk.red(`✗ Unknown command: ${command}`));
+      error(`unknown command '${command}'`);
+      console.error();
       printHelp(msg);
-      process.exitCode = 1;
+      process.exitCode = 2;
     }
   }
 };
 
 main().catch((err: Error) => {
-  console.error(chalk.red(`✗ ${err.message}`));
+  console.error(chalk.red(`error: ${err.message}`));
   process.exitCode = 1;
 });
