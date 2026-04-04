@@ -56,6 +56,14 @@ const matchFlag = (arg: string, flags: Record<string, string>): boolean => {
     flags.merged = "true";
     return true;
   }
+  if (arg === "--global") {
+    flags.global = "true";
+    return true;
+  }
+  if (arg === "--unset") {
+    flags.unset = "true";
+    return true;
+  }
   return false;
 };
 
@@ -223,6 +231,39 @@ describe("parseArgs — multiple names", () => {
     expect(command).toBe("prune");
     expect(flags.merged).toBe("true");
     expect(flags.dryRun).toBe("true");
+  });
+
+  it("should handle config get with key as positional", () => {
+    const { command, names } = parseArgs(["node", "arbors", "config", "runtime"]);
+    expect(command).toBe("config");
+    expect(names).toEqual(["runtime"]);
+  });
+
+  it("should handle config set with key and value", () => {
+    const { command, names } = parseArgs(["node", "arbors", "config", "language", "ko"]);
+    expect(command).toBe("config");
+    expect(names).toEqual(["language", "ko"]);
+  });
+
+  it("should handle config --global --unset flags", () => {
+    const { command, names, flags } = parseArgs([
+      "node",
+      "arbors",
+      "config",
+      "--global",
+      "--unset",
+      "worktreeDir",
+    ]);
+    expect(command).toBe("config");
+    expect(names).toEqual(["worktreeDir"]);
+    expect(flags.global).toBe("true");
+    expect(flags.unset).toBe("true");
+  });
+
+  it("should handle completion command", () => {
+    const { command, names } = parseArgs(["node", "arbors", "completion", "zsh"]);
+    expect(command).toBe("completion");
+    expect(names).toEqual(["zsh"]);
   });
 });
 

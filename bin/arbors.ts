@@ -1,6 +1,11 @@
 import { basename } from "node:path";
 import chalk from "chalk";
-import { loadConfig } from "../src/config";
+import {
+  type ArborConfig,
+  loadConfig,
+  getGlobalConfigPath,
+  getProjectConfigPath,
+} from "../src/config";
 import { copyIgnoredFiles } from "../src/git/exclude";
 import { validateWorktreeName, hasUncommittedChanges } from "../src/git/safety";
 import {
@@ -75,6 +80,14 @@ const matchFlag = (arg: string, flags: Record<string, string>): boolean => {
   }
   if (arg === "--merged") {
     flags.merged = "true";
+    return true;
+  }
+  if (arg === "--global") {
+    flags.global = "true";
+    return true;
+  }
+  if (arg === "--unset") {
+    flags.unset = "true";
     return true;
   }
   return false;
@@ -614,12 +627,145 @@ const main = async () => {
     }
 
     case "config": {
+      const configKey = name as keyof ArborConfig | undefined;
+      const configValue = names[1];
+
+      if (flags.unset && configKey) {
+        // arbors config --unset <key>
+        const configPath = flags.global
+          ? getGlobalConfigPath()
+          : projectRoot
+            ? getProjectConfigPath(projectRoot)
+            : getGlobalConfigPath();
+        let existing: Record<string, unknown> = {};
+        try {
+          const content = await adapter.readFile(configPath);
+          existing = JSON.parse(content);
+        } catch {
+          // file doesn't exist or is invalid
+        }
+        delete existing[configKey];
+        await adapter.mkdir(configPath.replace(/\/[^/]+$/, ""));
+        await adapter.writeFile(configPath, JSON.stringify(existing, null, 2));
+        if (!flags.quiet) console.log(chalk.green(`✓ Unset ${configKey}`));
+        break;
+      }
+
+      if (configKey && configValue !== undefined) {
+        // arbors config <key> <value> [--global]
+        const configPath = flags.global
+          ? getGlobalConfigPath()
+          : projectRoot
+            ? getProjectConfigPath(projectRoot)
+            : getGlobalConfigPath();
+        let existing: Record<string, unknown> = {};
+        try {
+          const content = await adapter.readFile(configPath);
+          existing = JSON.parse(content);
+        } catch {
+          // file doesn't exist or is invalid
+        }
+        // Parse arrays (comma-separated) for excludeFromCopy
+        if (configKey === "excludeFromCopy") {
+          existing[configKey] = configValue.split(",");
+        } else {
+          existing[configKey] = configValue;
+        }
+        await adapter.mkdir(configPath.replace(/\/[^/]+$/, ""));
+        await adapter.writeFile(configPath, JSON.stringify(existing, null, 2));
+        if (!flags.quiet) console.log(chalk.green(`✓ Set ${configKey} = ${configValue}`));
+        break;
+      }
+
+      if (configKey) {
+        // arbors config <key>
+        const value = config[configKey];
+        if (value === undefined) {
+          error(`unknown config key '${configKey}'`);
+          hint("Valid keys: runtime, language, packageManager, excludeFromCopy, worktreeDir");
+          process.exitCode = 1;
+        } else {
+          console.log(Array.isArray(value) ? value.join(",") : String(value));
+        }
+        break;
+      }
+
+      // arbors config (no args) — list all
       console.log();
       console.log(chalk.cyan.bold("arbors config"));
       console.log();
       Object.entries(config).forEach(([key, value]) => {
-        console.log(`  ${chalk.white(key)}: ${chalk.gray(String(value))}`);
+        console.log(
+          `  ${chalk.white(key)}: ${chalk.gray(Array.isArray(value) ? value.join(", ") : String(value))}`,
+        );
       });
+      break;
+    }
+
+    case "completion": {
+      const shell = name;
+      if (shell === "zsh") {
+        console.log(`#compdef arbors
+_arbors() {
+  local -a commands
+  commands=(
+    'add:Checkout or create a worktree'
+    'switch:Switch to existing worktree'
+    'remove:Remove worktree(s)'
+    'list:List worktrees'
+    'run:Run command in worktree context'
+    'status:Show current worktree info'
+    'prune:Clean up stale/merged worktrees'
+    'config:Manage configuration'
+    'excluded:Show exclude-from-copy patterns'
+    'completion:Generate shell completion'
+  )
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+  else
+    case "\${words[2]}" in
+      add|switch|remove|run)
+        local -a branches
+        branches=(\${(f)"$(git branch --format='%(refname:short)' 2>/dev/null)"})
+        _describe 'branch' branches
+        ;;
+      config)
+        local -a keys=(runtime language packageManager excludeFromCopy worktreeDir)
+        _describe 'key' keys
+        ;;
+    esac
+  fi
+}
+compdef _arbors arbors`);
+      } else if (shell === "bash") {
+        console.log(`_arbors() {
+  local cur prev commands
+  COMPREPLY=()
+  cur="\${COMP_WORDS[COMP_CWORD]}"
+  prev="\${COMP_WORDS[COMP_CWORD-1]}"
+  commands="add switch remove list run status prune config excluded completion"
+  if [[ \${COMP_CWORD} -eq 1 ]]; then
+    COMPREPLY=( $(compgen -W "\${commands}" -- "\${cur}") )
+  else
+    case "\${COMP_WORDS[1]}" in
+      add|switch|remove|run)
+        local branches=$(git branch --format='%(refname:short)' 2>/dev/null)
+        COMPREPLY=( $(compgen -W "\${branches}" -- "\${cur}") )
+        ;;
+      config)
+        local keys="runtime language packageManager excludeFromCopy worktreeDir"
+        COMPREPLY=( $(compgen -W "\${keys}" -- "\${cur}") )
+        ;;
+    esac
+  fi
+}
+complete -F _arbors arbors`);
+      } else {
+        error("unsupported shell");
+        hint("Usage: arbors completion bash");
+        hint("   or: arbors completion zsh");
+        process.exitCode = 2;
+      }
       break;
     }
 
