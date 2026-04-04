@@ -3,3 +3,5 @@ dist/
 .copse/
 *.tsbuildinfo
 .DS_Store
+.remember
+.superset
