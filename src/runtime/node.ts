@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { constants } from "node:fs";
 import { cp, glob, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { RuntimeAdapter } from "./adapter";
@@ -53,7 +54,14 @@ export const createNodeAdapter = (): RuntimeAdapter => ({
 
   async copy(src, dest) {
     await mkdir(dirname(dest), { recursive: true });
-    await cp(src, dest, { recursive: true });
+    const srcStat = await stat(src);
+    if (srcStat.isFile()) {
+      // Use FICLONE for CoW on APFS/Btrfs/XFS — falls back to regular copy
+      const { copyFile: copyFileAsync } = await import("node:fs/promises");
+      await copyFileAsync(src, dest, constants.COPYFILE_FICLONE);
+    } else {
+      await cp(src, dest, { recursive: true });
+    }
   },
 
   async mkdir(path) {

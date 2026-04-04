@@ -221,7 +221,31 @@ const main = async () => {
     return;
   }
 
-  if (flags.help || !command) {
+  if (flags.help) {
+    printHelp(msg);
+    return;
+  }
+
+  if (!command) {
+    if (process.stdout.isTTY) {
+      // Launch interactive TUI
+      const { render } = await import("ink");
+      const React = await import("react");
+      const { App } = await import("../src/tui/App");
+      const { getProjects } = await import("../src/project/registry");
+
+      const projects = await getProjects(adapter);
+      const { waitUntilExit } = render(
+        React.createElement(App, {
+          adapter,
+          messages: msg,
+          projects,
+          listWorktrees,
+        }),
+      );
+      await waitUntilExit();
+      return;
+    }
     printHelp(msg);
     return;
   }
