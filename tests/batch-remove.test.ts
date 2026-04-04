@@ -36,6 +36,26 @@ const matchFlag = (arg: string, flags: Record<string, string>): boolean => {
     flags.version = "true";
     return true;
   }
+  if (arg === "--no-copy") {
+    flags.noCopy = "true";
+    return true;
+  }
+  if (arg === "--no-install") {
+    flags.noInstall = "true";
+    return true;
+  }
+  if (arg === "--dry-run" || arg === "-n") {
+    flags.dryRun = "true";
+    return true;
+  }
+  if (arg === "--quiet" || arg === "-q") {
+    flags.quiet = "true";
+    return true;
+  }
+  if (arg === "--merged") {
+    flags.merged = "true";
+    return true;
+  }
   return false;
 };
 
@@ -44,9 +64,20 @@ const parseArgs = (argv: string[]) => {
 
   const flags: Record<string, string> = {};
   const names: string[] = [];
+  const rest: string[] = [];
   let command: string | undefined;
+  let seenSeparator = false;
 
   for (const arg of args) {
+    if (arg === "--") {
+      seenSeparator = true;
+      continue;
+    }
+    if (seenSeparator) {
+      rest.push(arg);
+      continue;
+    }
+
     if (matchFlag(arg, flags)) continue;
     if (arg.startsWith("-")) continue;
 
@@ -57,7 +88,7 @@ const parseArgs = (argv: string[]) => {
     }
   }
 
-  return { command, names, flags };
+  return { command, names, flags, rest };
 };
 
 describe("parseArgs — multiple names", () => {
@@ -139,6 +170,59 @@ describe("parseArgs — multiple names", () => {
     expect(command).toBe("remove");
     expect(names).toEqual(["feature/a", "feature/b"]);
     expect(flags.force).toBe("true");
+  });
+
+  it("should separate args after -- into rest", () => {
+    const { command, names, rest } = parseArgs([
+      "node",
+      "arbors",
+      "run",
+      "feature",
+      "--",
+      "pnpm",
+      "test",
+    ]);
+    expect(command).toBe("run");
+    expect(names).toEqual(["feature"]);
+    expect(rest).toEqual(["pnpm", "test"]);
+  });
+
+  it("should treat flags after -- as rest args", () => {
+    const { flags, rest } = parseArgs([
+      "node",
+      "arbors",
+      "run",
+      "feature",
+      "--",
+      "git",
+      "--version",
+    ]);
+    expect(flags.version).toBeUndefined();
+    expect(rest).toEqual(["git", "--version"]);
+  });
+
+  it("should handle CI flags", () => {
+    const { flags } = parseArgs([
+      "node",
+      "arbors",
+      "add",
+      "-c",
+      "feature",
+      "--no-copy",
+      "--no-install",
+      "-q",
+    ]);
+    expect(flags.create).toBe("true");
+    expect(flags.noCopy).toBe("true");
+    expect(flags.noInstall).toBe("true");
+    expect(flags.quiet).toBe("true");
+  });
+
+  it("should handle prune flags", () => {
+    const { command, flags } = parseArgs(["node", "arbors", "prune", "--merged", "-n"]);
+    expect(command).toBe("prune");
+    expect(flags.merged).toBe("true");
+    expect(flags.dryRun).toBe("true");
   });
 });
 

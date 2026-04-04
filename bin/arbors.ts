@@ -10,6 +10,7 @@ import {
   checkoutWorktree,
   createWorktree,
   getMainRepoRoot,
+  getWorktreeRoot,
   listWorktrees,
   remoteBranchExists,
   removeWorktree,
@@ -56,6 +57,26 @@ const matchFlag = (arg: string, flags: Record<string, string>): boolean => {
     flags.version = "true";
     return true;
   }
+  if (arg === "--no-copy") {
+    flags.noCopy = "true";
+    return true;
+  }
+  if (arg === "--no-install") {
+    flags.noInstall = "true";
+    return true;
+  }
+  if (arg === "--dry-run" || arg === "-n") {
+    flags.dryRun = "true";
+    return true;
+  }
+  if (arg === "--quiet" || arg === "-q") {
+    flags.quiet = "true";
+    return true;
+  }
+  if (arg === "--merged") {
+    flags.merged = "true";
+    return true;
+  }
   return false;
 };
 
@@ -64,9 +85,21 @@ const parseArgs = (argv: string[]) => {
 
   const flags: Record<string, string> = {};
   const names: string[] = [];
+  const rest: string[] = [];
   let command: string | undefined;
+  let seenSeparator = false;
 
   for (const arg of args) {
+    // Everything after -- goes to rest (for `run` command)
+    if (arg === "--") {
+      seenSeparator = true;
+      continue;
+    }
+    if (seenSeparator) {
+      rest.push(arg);
+      continue;
+    }
+
     if (matchFlag(arg, flags)) continue;
 
     // Skip unknown flags
@@ -80,7 +113,7 @@ const parseArgs = (argv: string[]) => {
     }
   }
 
-  return { command, names, flags };
+  return { command, names, flags, rest };
 };
 
 const error = (message: string) => {
@@ -103,6 +136,9 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  switch <branch>                 Switch to existing worktree");
   console.log("  remove (-r) <branch...> [-f]    Remove worktree(s)");
   console.log("  list [--porcelain]              List worktrees");
+  console.log("  run <branch> -- <command...>    Run command in worktree context");
+  console.log("  status                          Show current worktree info");
+  console.log("  prune [-n] [--merged]           Clean up stale/merged worktrees");
   console.log("  excluded                        Show exclude-from-copy patterns");
   console.log("  config                          Show current config");
   console.log();
@@ -110,7 +146,12 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  -c                            Create new branch (git switch -c)");
   console.log("  -C                            Force create (git switch -C)");
   console.log("  -f, --force                   Force remove (skip uncommitted changes check)");
+  console.log("  -n, --dry-run                 Preview without making changes");
+  console.log("  -q, --quiet                   Minimal output");
+  console.log("  --no-copy                     Skip copying ignored files");
+  console.log("  --no-install                  Skip dependency installation");
   console.log("  --porcelain                   Machine-readable stable output");
+  console.log("  --merged                      Target merged PR worktrees (prune)");
   console.log("  -h, --help                    Show help");
   console.log("  -v, --version                 Show version");
 };
@@ -130,7 +171,7 @@ const getProjectRoot = async (): Promise<string | undefined> => {
 };
 
 const main = async () => {
-  const { command, names, flags } = parseArgs(process.argv);
+  const { command, names, flags, rest } = parseArgs(process.argv);
   const name = names[0];
   const projectRoot = await getProjectRoot();
   const config = await loadConfig(
@@ -231,17 +272,21 @@ const main = async () => {
       }
 
       try {
-        console.log();
-        const copied = await withSpinner(msg.copying, () =>
-          copyIgnoredFiles(adapter, worktreePath, config.excludeFromCopy),
-        );
-        console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
+        if (!flags.noCopy) {
+          if (!flags.quiet) console.log();
+          const copied = await withSpinner(msg.copying, () =>
+            copyIgnoredFiles(adapter, worktreePath, config.excludeFromCopy),
+          );
+          if (!flags.quiet) console.log(chalk.green(`✓ ${msg.copied} (${copied.length} files)`));
+        }
 
-        console.log();
-        await withSpinner(msg.installing, () =>
-          runSetup(adapter, worktreePath, config.packageManager),
-        );
-        console.log(chalk.green(`✓ ${msg.installed}`));
+        if (!flags.noInstall) {
+          if (!flags.quiet) console.log();
+          await withSpinner(msg.installing, () =>
+            runSetup(adapter, worktreePath, config.packageManager),
+          );
+          if (!flags.quiet) console.log(chalk.green(`✓ ${msg.installed}`));
+        }
 
         const repoRoot = await getMainRepoRoot(adapter);
         await registerProject(adapter, name, repoRoot);
@@ -437,6 +482,133 @@ const main = async () => {
         console.log(chalk.gray("  No exclude patterns (all ignored files will be copied)"));
       } else {
         config.excludeFromCopy.forEach((p: string) => console.log(`  ${p}`));
+      }
+      break;
+    }
+
+    case "run": {
+      if (!name || rest.length === 0) {
+        error("missing branch name or command");
+        console.error();
+        console.error("usage: arbors run <branch> -- <command...>");
+        process.exitCode = 2;
+        return;
+      }
+
+      const allWorktrees = await listWorktrees(adapter);
+      const runTarget = allWorktrees.find((wt) => wt.branch === name || basename(wt.path) === name);
+
+      if (!runTarget) {
+        error(`no worktree found for branch '${name}'`);
+        hint("To see available worktrees:");
+        hint("    arbors list");
+        process.exitCode = 1;
+        return;
+      }
+
+      const result = await adapter.exec(rest[0], rest.slice(1), { cwd: runTarget.path });
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      process.exitCode = result.exitCode;
+      break;
+    }
+
+    case "status": {
+      const currentWorktrees = await listWorktrees(adapter);
+      let currentPath: string;
+      try {
+        currentPath = await getWorktreeRoot(adapter);
+      } catch {
+        error("not inside a worktree");
+        process.exitCode = 1;
+        return;
+      }
+
+      const currentWt = currentWorktrees.find((wt) => wt.path === currentPath);
+
+      if (flags.porcelain) {
+        console.log(
+          `${currentWt?.branch ?? "(detached)"}\t${currentPath}\t${currentWt?.isMain ? "main" : "linked"}`,
+        );
+      } else {
+        console.log();
+        console.log(chalk.cyan.bold("arbors status"));
+        console.log();
+        console.log(`  ${chalk.white("worktree")}: ${chalk.gray(currentPath)}`);
+        console.log(
+          `  ${chalk.white("branch")}:   ${chalk.gray(currentWt?.branch ?? "(detached)")}`,
+        );
+        console.log(
+          `  ${chalk.white("type")}:     ${chalk.gray(currentWt?.isMain ? "main" : "linked")}`,
+        );
+
+        const hasChanges = await hasUncommittedChanges(adapter, currentPath);
+        console.log(
+          `  ${chalk.white("changes")}:  ${hasChanges ? chalk.yellow("uncommitted changes") : chalk.green("clean")}`,
+        );
+      }
+      break;
+    }
+
+    case "prune": {
+      const repoRootForPrune = await getMainRepoRoot(adapter);
+      const dbEntries = await getWorktrees(adapter, repoRootForPrune);
+      const gitEntries = await listWorktrees(adapter);
+      const gitPaths = new Set(gitEntries.map((wt) => wt.path));
+
+      if (flags.merged) {
+        const mergedBranches: { branch: string; path: string }[] = [];
+
+        for (const wt of gitEntries) {
+          if (wt.isMain || !wt.branch) continue;
+          const prResult = await adapter.exec("gh", [
+            "pr",
+            "view",
+            wt.branch,
+            "--json",
+            "state",
+            "--jq",
+            ".state",
+          ]);
+          if (prResult.exitCode === 0 && prResult.stdout.trim() === "MERGED") {
+            mergedBranches.push({ branch: wt.branch, path: wt.path });
+          }
+        }
+
+        if (mergedBranches.length === 0) {
+          if (!flags.quiet) console.log(chalk.gray("No merged worktrees found."));
+          break;
+        }
+
+        for (const { branch, path } of mergedBranches) {
+          if (flags.dryRun) {
+            console.log(`would remove: ${branch} (${path})`);
+          } else {
+            try {
+              await removeWorktree(adapter, path, branch);
+              await unregisterWorktree(adapter, path);
+              if (!flags.quiet) console.log(chalk.green(`✓ ${msg.removed}: ${branch}`));
+            } catch (err) {
+              error(`failed to remove ${branch}: ${(err as Error).message}`);
+            }
+          }
+        }
+      } else {
+        const staleEntries = dbEntries.filter((w) => !gitPaths.has(w.path));
+
+        if (staleEntries.length === 0) {
+          if (!flags.quiet) console.log(chalk.gray("No stale worktrees found."));
+          break;
+        }
+
+        for (const entry of staleEntries) {
+          if (flags.dryRun) {
+            console.log(`would remove: ${entry.branch} (${entry.path})`);
+          } else {
+            await unregisterWorktree(adapter, entry.path);
+            if (!flags.quiet) console.log(chalk.green(`✓ Pruned stale entry: ${entry.branch}`));
+          }
+        }
       }
       break;
     }
