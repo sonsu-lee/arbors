@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 import {
   getProjects,
   getWorktrees,
@@ -37,7 +37,7 @@ describe("Project Registry", () => {
     adapter = createMockAdapter();
   });
 
-  it("should return empty list when no projects registered", async () => {
+  test("should return empty list when no projects registered", async () => {
     // Given: an empty registry (no db.json)
     // When: projects are fetched
     const projects = await getProjects(adapter);
@@ -46,7 +46,7 @@ describe("Project Registry", () => {
     expect(projects).toEqual([]);
   });
 
-  it("should register and retrieve a project", async () => {
+  test("should register and retrieve a project", async () => {
     // Given: an empty registry
     // When: a project is registered
     await registerProject(adapter, "my-app", "/home/user/my-app");
@@ -58,7 +58,7 @@ describe("Project Registry", () => {
     expect(projects[0].path).toBe("/home/user/my-app");
   });
 
-  it("should update lastAccessed when registering an existing project", async () => {
+  test("should update lastAccessed when registering an existing project", async () => {
     // Given: a registered project
     await registerProject(adapter, "my-app", "/home/user/my-app");
     const firstAccess = (await getProjects(adapter))[0].lastAccessed;
@@ -73,7 +73,7 @@ describe("Project Registry", () => {
     expect(projects[0].lastAccessed).not.toBe(firstAccess);
   });
 
-  it("should sort projects by most recently accessed", async () => {
+  test("should sort projects by most recently accessed", async () => {
     // Given: two projects registered at different times
     await registerProject(adapter, "old-app", "/old");
     await new Promise((r) => setTimeout(r, 10));
@@ -87,7 +87,7 @@ describe("Project Registry", () => {
     expect(projects[1].name).toBe("old-app");
   });
 
-  it("should remove a project by path", async () => {
+  test("should remove a project by path", async () => {
     // Given: a registered project
     await registerProject(adapter, "my-app", "/home/user/my-app");
 
@@ -107,7 +107,7 @@ describe("Worktree Registry", () => {
     adapter = createMockAdapter();
   });
 
-  it("should register and retrieve worktrees by project", async () => {
+  test("should register and retrieve worktrees by project", async () => {
     await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
     await registerWorktree(adapter, "/wt/fix-bug", "fix/bug", "/repo");
     await registerWorktree(adapter, "/wt/other", "other", "/other-repo");
@@ -118,7 +118,7 @@ describe("Worktree Registry", () => {
     expect(worktrees[1].branch).toBe("fix/bug");
   });
 
-  it("should not duplicate worktrees with the same path", async () => {
+  test("should not duplicate worktrees with the same path", async () => {
     await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
     await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
 
@@ -126,7 +126,7 @@ describe("Worktree Registry", () => {
     expect(worktrees).toHaveLength(1);
   });
 
-  it("should unregister a worktree by path", async () => {
+  test("should unregister a worktree by path", async () => {
     await registerWorktree(adapter, "/wt/feature-login", "feature/login", "/repo");
     await unregisterWorktree(adapter, "/wt/feature-login");
 

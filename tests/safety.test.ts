@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { validateWorktreeName, isCurrentWorktree } from "../src/git/safety";
 import type { RuntimeAdapter } from "../src/runtime/adapter";
 
@@ -14,7 +14,7 @@ const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdap
 });
 
 describe("validateWorktreeName", () => {
-  it("should accept valid alphanumeric names", () => {
+  test("should accept valid alphanumeric names", () => {
     // Given: valid worktree names
     const names = ["feature-auth", "fix.login", "release_1.0", "v2"];
 
@@ -24,7 +24,7 @@ describe("validateWorktreeName", () => {
     });
   });
 
-  it("should reject names starting with special characters", () => {
+  test("should reject names starting with special characters", () => {
     // Given: names starting with dot, dash, or underscore
     const names = [".hidden", "-flag", "_private"];
 
@@ -34,21 +34,21 @@ describe("validateWorktreeName", () => {
     });
   });
 
-  it("should reject empty strings", () => {
+  test("should reject empty strings", () => {
     // Given: an empty string
     // When: validated
     // Then: should be invalid
     expect(validateWorktreeName("")).toBe(false);
   });
 
-  it("should reject names with path traversal", () => {
+  test("should reject names with path traversal", () => {
     // Given: a name containing ".."
     // When: validated
     // Then: should be invalid
     expect(validateWorktreeName("foo..bar")).toBe(false);
   });
 
-  it("should accept names with slashes for branch conventions", () => {
+  test("should accept names with slashes for branch conventions", () => {
     // Given: names with slashes (feature/xxx, fix/xxx patterns)
     const names = ["feature/login", "fix/ACD-123", "release/1.0"];
 
@@ -58,7 +58,7 @@ describe("validateWorktreeName", () => {
     });
   });
 
-  it("should reject names with spaces or special chars", () => {
+  test("should reject names with spaces or special chars", () => {
     // Given: names with spaces or special characters
     const names = ["has space", "has@at"];
 
@@ -70,7 +70,7 @@ describe("validateWorktreeName", () => {
 });
 
 describe("isCurrentWorktree", () => {
-  it("should return true when cwd matches worktree path", async () => {
+  test("should return true when cwd matches worktree path", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({
         stdout: "/home/user/arbors/project/feature-x",
@@ -82,7 +82,7 @@ describe("isCurrentWorktree", () => {
     expect(await isCurrentWorktree(adapter, "/home/user/arbors/project/feature-x")).toBe(true);
   });
 
-  it("should return false when cwd differs from worktree path", async () => {
+  test("should return false when cwd differs from worktree path", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({
         stdout: "/home/user/project",

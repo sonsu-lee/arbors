@@ -1,8 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { runSetup } from "../src/project/setup";
 import type { RuntimeAdapter } from "../src/runtime/adapter";
 
-const createMockAdapter = (existingFiles: string[], execLog: { cmd: string[]; cwd?: string }[] = []): RuntimeAdapter => ({
+const createMockAdapter = (
+  existingFiles: string[],
+  execLog: { cmd: string[]; cwd?: string }[] = [],
+): RuntimeAdapter => ({
   exec: vi.fn(async (cmd: string, args: string[], options?: { cwd?: string }) => {
     execLog.push({ cmd: [cmd, ...args], cwd: options?.cwd });
     return { stdout: "", stderr: "", exitCode: 0 };
@@ -16,7 +19,7 @@ const createMockAdapter = (existingFiles: string[], execLog: { cmd: string[]; cw
 });
 
 describe("runSetup", () => {
-  it("should detect and run pnpm install in worktree cwd", async () => {
+  test("should detect and run pnpm install in worktree cwd", async () => {
     // Given: a project with pnpm-lock.yaml
     const execLog: { cmd: string[]; cwd?: string }[] = [];
     const adapter = createMockAdapter(["pnpm-lock.yaml"], execLog);
@@ -31,7 +34,7 @@ describe("runSetup", () => {
     expect(pnpmCall?.cwd).toBe("/project");
   });
 
-  it("should use config-specified package manager over auto-detect", async () => {
+  test("should use config-specified package manager over auto-detect", async () => {
     // Given: a project with pnpm lock but config says yarn
     const execLog: { cmd: string[]; cwd?: string }[] = [];
     const adapter = createMockAdapter(["pnpm-lock.yaml"], execLog);
@@ -46,7 +49,7 @@ describe("runSetup", () => {
     expect(yarnCall?.cwd).toBe("/project");
   });
 
-  it("should detect and run mise install before package manager", async () => {
+  test("should detect and run mise install before package manager", async () => {
     // Given: a project with mise.toml and pnpm-lock.yaml
     const execLog: { cmd: string[]; cwd?: string }[] = [];
     const adapter = createMockAdapter(["mise.toml", "pnpm-lock.yaml"], execLog);
@@ -64,7 +67,7 @@ describe("runSetup", () => {
     expect(execLog[pnpmIndex].cwd).toBe("/project");
   });
 
-  it("should skip package manager when no lock file and auto mode", async () => {
+  test("should skip package manager when no lock file and auto mode", async () => {
     // Given: a project with no lock files
     const execLog: { cmd: string[]; cwd?: string }[] = [];
     const adapter = createMockAdapter([], execLog);
@@ -77,7 +80,7 @@ describe("runSetup", () => {
     expect(execLog).toHaveLength(0);
   });
 
-  it("should detect nvm and source nvm.sh before nvm install", async () => {
+  test("should detect nvm and source nvm.sh before nvm install", async () => {
     // Given: a project with .nvmrc
     const execLog: { cmd: string[]; cwd?: string }[] = [];
     const adapter = createMockAdapter([".nvmrc"], execLog);

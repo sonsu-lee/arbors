@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { loadMessages } from "../src/i18n/index";
 
 describe("i18n", () => {
@@ -11,7 +11,7 @@ describe("i18n", () => {
     vi.unstubAllEnvs();
   });
 
-  it("should load English messages by default", async () => {
+  test("should load English messages by default", async () => {
     // Given: no language configured and no LANG env
     // When: messages are loaded without config
     const messages = await loadMessages();
@@ -20,7 +20,7 @@ describe("i18n", () => {
     expect(messages.selectProject).toBe("Select a project:");
   });
 
-  it("should load Korean messages when configured", async () => {
+  test("should load Korean messages when configured", async () => {
     // Given: language is set to ko
     // When: messages are loaded with ko config
     const messages = await loadMessages("ko");
@@ -29,7 +29,7 @@ describe("i18n", () => {
     expect(messages.selectProject).toBe("프로젝트를 선택하세요:");
   });
 
-  it("should load Japanese messages when configured", async () => {
+  test("should load Japanese messages when configured", async () => {
     // Given: language is set to ja
     // When: messages are loaded with ja config
     const messages = await loadMessages("ja");
@@ -38,7 +38,7 @@ describe("i18n", () => {
     expect(messages.selectProject).toBe("プロジェクトを選択してください:");
   });
 
-  it("should detect language from LANG env variable", async () => {
+  test("should detect language from LANG env variable", async () => {
     // Given: LANG is set to ko_KR.UTF-8
     vi.stubEnv("LANG", "ko_KR.UTF-8");
 
@@ -49,7 +49,7 @@ describe("i18n", () => {
     expect(messages.selectProject).toBe("프로젝트를 선택하세요:");
   });
 
-  it("should handle resultsFound with correct pluralization", async () => {
+  test("should handle resultsFound with correct pluralization", async () => {
     // Given: English messages
     const messages = await loadMessages("en");
 
@@ -62,7 +62,7 @@ describe("i18n", () => {
     expect(plural).toBe("3 results found");
   });
 
-  it("should fall back to English for unknown locale", async () => {
+  test("should fall back to English for unknown locale", async () => {
     // Given: LANG is set to an unsupported language
     vi.stubEnv("LANG", "fr_FR.UTF-8");
 

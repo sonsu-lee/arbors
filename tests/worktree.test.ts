@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import {
   getWorktreeRoot,
   getMainRepoRoot,
@@ -26,7 +26,7 @@ const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdap
 });
 
 describe("getWorktreeRoot", () => {
-  it("should return the current worktree root path", async () => {
+  test("should return the current worktree root path", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "/home/user/project", stderr: "", exitCode: 0 })),
     });
@@ -35,7 +35,7 @@ describe("getWorktreeRoot", () => {
     expect(root).toBe("/home/user/project");
   });
 
-  it("should throw when not in a git repository", async () => {
+  test("should throw when not in a git repository", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "", stderr: "fatal", exitCode: 128 })),
     });
@@ -45,7 +45,7 @@ describe("getWorktreeRoot", () => {
 });
 
 describe("getMainRepoRoot", () => {
-  it("should return the main worktree path", async () => {
+  test("should return the main worktree path", async () => {
     const porcelainOutput = [
       "worktree /home/user/project",
       "HEAD abc1234",
@@ -64,7 +64,7 @@ describe("getMainRepoRoot", () => {
     expect(root).toBe("/home/user/project");
   });
 
-  it("should throw when not in a git repository", async () => {
+  test("should throw when not in a git repository", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "", stderr: "error", exitCode: 1 })),
     });
@@ -74,7 +74,7 @@ describe("getMainRepoRoot", () => {
 });
 
 describe("getRepoName", () => {
-  it("should return the basename of the main repo root", async () => {
+  test("should return the basename of the main repo root", async () => {
     const porcelainOutput = [
       "worktree /home/user/my-project",
       "HEAD abc1234",
@@ -91,7 +91,7 @@ describe("getRepoName", () => {
 });
 
 describe("getDefaultBranch", () => {
-  it("should return branch from symbolic ref when available", async () => {
+  test("should return branch from symbolic ref when available", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "refs/remotes/origin/main", stderr: "", exitCode: 0 })),
     });
@@ -100,7 +100,7 @@ describe("getDefaultBranch", () => {
     expect(branch).toBe("main");
   });
 
-  it("should fallback to main when symbolic ref fails and main exists", async () => {
+  test("should fallback to main when symbolic ref fails and main exists", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "symbolic-ref") return { stdout: "", stderr: "", exitCode: 1 };
       if (args?.[0] === "rev-parse") return { stdout: "", stderr: "", exitCode: 0 };
@@ -112,7 +112,7 @@ describe("getDefaultBranch", () => {
     expect(branch).toBe("main");
   });
 
-  it("should fallback to master when neither symbolic ref nor main exists", async () => {
+  test("should fallback to master when neither symbolic ref nor main exists", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "symbolic-ref") return { stdout: "", stderr: "", exitCode: 1 };
       if (args?.[0] === "rev-parse") return { stdout: "", stderr: "", exitCode: 1 };
@@ -126,7 +126,7 @@ describe("getDefaultBranch", () => {
 });
 
 describe("listWorktrees", () => {
-  it("should parse porcelain output into worktree list", async () => {
+  test("should parse porcelain output into worktree list", async () => {
     const porcelainOutput = [
       "worktree /home/user/project",
       "HEAD abc1234",
@@ -148,7 +148,7 @@ describe("listWorktrees", () => {
     ]);
   });
 
-  it("should parse detached worktree with undefined branch", async () => {
+  test("should parse detached worktree with undefined branch", async () => {
     const porcelainOutput = [
       "worktree /home/user/project",
       "HEAD abc1234",
@@ -170,7 +170,7 @@ describe("listWorktrees", () => {
     ]);
   });
 
-  it("should return empty array on git command failure", async () => {
+  test("should return empty array on git command failure", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "", stderr: "error", exitCode: 1 })),
     });
@@ -181,7 +181,7 @@ describe("listWorktrees", () => {
 });
 
 describe("branchExists", () => {
-  it("should return true when branch exists", async () => {
+  test("should return true when branch exists", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "abc123", stderr: "", exitCode: 0 })),
     });
@@ -189,7 +189,7 @@ describe("branchExists", () => {
     expect(await branchExists(adapter, "main")).toBe(true);
   });
 
-  it("should return false when branch does not exist", async () => {
+  test("should return false when branch does not exist", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 1 })),
     });
@@ -199,7 +199,7 @@ describe("branchExists", () => {
 });
 
 describe("remoteBranchExists", () => {
-  it("should return true when remote branch exists", async () => {
+  test("should return true when remote branch exists", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "abc123\trefs/heads/feature", stderr: "", exitCode: 0 })),
     });
@@ -207,7 +207,7 @@ describe("remoteBranchExists", () => {
     expect(await remoteBranchExists(adapter, "feature")).toBe(true);
   });
 
-  it("should return false when remote branch does not exist", async () => {
+  test("should return false when remote branch does not exist", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),
     });
@@ -219,7 +219,7 @@ describe("remoteBranchExists", () => {
 const MAIN_PORCELAIN = "worktree /home/user/project\nHEAD abc\nbranch refs/heads/main";
 
 describe("createWorktree", () => {
-  it("should create a new branch worktree and unset upstream", async () => {
+  test("should create a new branch worktree and unset upstream", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       // getRepoName → getMainRepoRoot → listWorktrees
       if (args?.[0] === "worktree" && args?.[1] === "list") {
@@ -250,7 +250,7 @@ describe("createWorktree", () => {
     expect(path).toContain("feature-login");
   });
 
-  it("should throw when branch already exists", async () => {
+  test("should throw when branch already exists", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "worktree" && args?.[1] === "list") {
         return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
@@ -271,7 +271,7 @@ describe("createWorktree", () => {
     );
   });
 
-  it("should use specified base branch", async () => {
+  test("should use specified base branch", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "worktree" && args?.[1] === "list") {
         return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
@@ -298,7 +298,7 @@ describe("createWorktree", () => {
 });
 
 describe("checkoutWorktree", () => {
-  it("should return existing worktree without creating", async () => {
+  test("should return existing worktree without creating", async () => {
     const porcelainOutput = [
       "worktree /home/user/project",
       "HEAD abc1234",
@@ -320,7 +320,7 @@ describe("checkoutWorktree", () => {
     });
   });
 
-  it("should create worktree when not already checked out", async () => {
+  test("should create worktree when not already checked out", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "worktree" && args?.[1] === "list") {
         return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
@@ -337,7 +337,7 @@ describe("checkoutWorktree", () => {
 });
 
 describe("checkoutRemoteWorktree", () => {
-  it("should return existing worktree without fetching", async () => {
+  test("should return existing worktree without fetching", async () => {
     const porcelainOutput = [
       "worktree /home/user/project",
       "HEAD abc1234",
@@ -359,7 +359,7 @@ describe("checkoutRemoteWorktree", () => {
     });
   });
 
-  it("should fetch and create worktree for remote branch", async () => {
+  test("should fetch and create worktree for remote branch", async () => {
     const execFn = vi.fn(async (_cmd: string, args?: string[]) => {
       if (args?.[0] === "worktree" && args?.[1] === "list") {
         return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
@@ -386,22 +386,31 @@ describe("checkoutRemoteWorktree", () => {
 });
 
 describe("removeWorktree", () => {
-  it("should remove worktree and delete branch", async () => {
-    const execFn = vi.fn(async (_cmd: string, _args?: string[]) => ({ stdout: "", stderr: "", exitCode: 0 }));
+  test("should remove worktree and delete branch", async () => {
+    const execFn = vi.fn(async (_cmd: string, _args?: string[]) => ({
+      stdout: "",
+      stderr: "",
+      exitCode: 0,
+    }));
     const adapter = createMockAdapter({ exec: execFn });
 
     await removeWorktree(adapter, "/home/user/arbors/project/feature", "feature");
 
     // Should call git worktree remove
     const removeCall = execFn.mock.calls.find((call) => call[1]?.[0] === "worktree");
-    expect(removeCall?.[1]).toEqual(["worktree", "remove", "--force", "/home/user/arbors/project/feature"]);
+    expect(removeCall?.[1]).toEqual([
+      "worktree",
+      "remove",
+      "--force",
+      "/home/user/arbors/project/feature",
+    ]);
 
     // Should call git branch -D
     const branchCall = execFn.mock.calls.find((call) => call[1]?.[0] === "branch");
     expect(branchCall?.[1]).toEqual(["branch", "-D", "feature"]);
   });
 
-  it("should throw when worktree removal fails", async () => {
+  test("should throw when worktree removal fails", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async () => ({ stdout: "", stderr: "removal failed", exitCode: 1 })),
     });
@@ -409,15 +418,24 @@ describe("removeWorktree", () => {
     await expect(removeWorktree(adapter, "/path", "branch")).rejects.toThrow("removal failed");
   });
 
-  it("should skip branch deletion when branch is undefined (detached)", async () => {
-    const execFn = vi.fn(async (_cmd: string, _args?: string[]) => ({ stdout: "", stderr: "", exitCode: 0 }));
+  test("should skip branch deletion when branch is undefined (detached)", async () => {
+    const execFn = vi.fn(async (_cmd: string, _args?: string[]) => ({
+      stdout: "",
+      stderr: "",
+      exitCode: 0,
+    }));
     const adapter = createMockAdapter({ exec: execFn });
 
     await removeWorktree(adapter, "/home/user/arbors/project/detached-wt", undefined);
 
     // Should call git worktree remove
     const removeCall = execFn.mock.calls.find((call) => call[1]?.[0] === "worktree");
-    expect(removeCall?.[1]).toEqual(["worktree", "remove", "--force", "/home/user/arbors/project/detached-wt"]);
+    expect(removeCall?.[1]).toEqual([
+      "worktree",
+      "remove",
+      "--force",
+      "/home/user/arbors/project/detached-wt",
+    ]);
 
     // Should NOT call git branch -D
     const branchCall = execFn.mock.calls.find((call) => call[1]?.[0] === "branch");

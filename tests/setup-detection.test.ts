@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { detectPackageManager, detectRuntimeManager } from "../src/project/setup";
 import type { RuntimeAdapter } from "../src/runtime/adapter";
 
@@ -13,7 +13,7 @@ const createMockAdapter = (existingFiles: string[]): RuntimeAdapter => ({
 });
 
 describe("detectPackageManager", () => {
-  it("should detect pnpm from lock file", async () => {
+  test("should detect pnpm from lock file", async () => {
     // Given: a directory with pnpm-lock.yaml
     const adapter = createMockAdapter(["pnpm-lock.yaml"]);
 
@@ -24,7 +24,7 @@ describe("detectPackageManager", () => {
     expect(result).toBe("pnpm");
   });
 
-  it("should detect yarn from lock file", async () => {
+  test("should detect yarn from lock file", async () => {
     // Given: a directory with yarn.lock
     const adapter = createMockAdapter(["yarn.lock"]);
 
@@ -35,7 +35,7 @@ describe("detectPackageManager", () => {
     expect(result).toBe("yarn");
   });
 
-  it("should detect npm from lock file", async () => {
+  test("should detect npm from lock file", async () => {
     // Given: a directory with package-lock.json
     const adapter = createMockAdapter(["package-lock.json"]);
 
@@ -46,7 +46,7 @@ describe("detectPackageManager", () => {
     expect(result).toBe("npm");
   });
 
-  it("should return null when no lock file found", async () => {
+  test("should return null when no lock file found", async () => {
     // Given: a directory with no lock files
     const adapter = createMockAdapter([]);
 
@@ -57,7 +57,7 @@ describe("detectPackageManager", () => {
     expect(result).toBeNull();
   });
 
-  it("should prioritize pnpm over yarn when both exist", async () => {
+  test("should prioritize pnpm over yarn when both exist", async () => {
     // Given: a directory with both pnpm and yarn lock files
     const adapter = createMockAdapter(["pnpm-lock.yaml", "yarn.lock"]);
 
@@ -70,7 +70,7 @@ describe("detectPackageManager", () => {
 });
 
 describe("detectRuntimeManager", () => {
-  it("should detect mise from mise.toml", async () => {
+  test("should detect mise from mise.toml", async () => {
     // Given: a directory with mise.toml
     const adapter = createMockAdapter(["mise.toml"]);
 
@@ -81,7 +81,7 @@ describe("detectRuntimeManager", () => {
     expect(result).toBe("mise");
   });
 
-  it("should detect nvm from .nvmrc", async () => {
+  test("should detect nvm from .nvmrc", async () => {
     // Given: a directory with .nvmrc
     const adapter = createMockAdapter([".nvmrc"]);
 
@@ -92,7 +92,7 @@ describe("detectRuntimeManager", () => {
     expect(result).toBe("nvm");
   });
 
-  it("should return null when no runtime manager found", async () => {
+  test("should return null when no runtime manager found", async () => {
     // Given: a directory with no runtime config files
     const adapter = createMockAdapter([]);
 

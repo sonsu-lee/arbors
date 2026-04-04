@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, test, expect } from "vitest";
 import { en } from "../src/i18n/en";
 
 /**
@@ -100,7 +100,7 @@ const parseArgs = (argv: string[]) => {
 };
 
 describe("parseArgs — multiple names", () => {
-  it("should collect multiple branch names", () => {
+  test("should collect multiple branch names", () => {
     const { names } = parseArgs([
       "node",
       "arbors",
@@ -112,42 +112,42 @@ describe("parseArgs — multiple names", () => {
     expect(names).toEqual(["feature/a", "feature/b", "feature/c"]);
   });
 
-  it("should return single name in array for backward compat", () => {
+  test("should return single name in array for backward compat", () => {
     const { names } = parseArgs(["node", "arbors", "remove", "feature/a"]);
     expect(names).toEqual(["feature/a"]);
   });
 
-  it("should return empty array when no names provided", () => {
+  test("should return empty array when no names provided", () => {
     const { names } = parseArgs(["node", "arbors", "remove"]);
     expect(names).toEqual([]);
   });
 
-  it("should collect start-point as second positional arg", () => {
+  test("should collect start-point as second positional arg", () => {
     const { names, flags } = parseArgs(["node", "arbors", "add", "-c", "my-branch", "main"]);
     expect(names).toEqual(["my-branch", "main"]);
     expect(flags.create).toBe("true");
   });
 
-  it("should handle -C flag for force create", () => {
+  test("should handle -C flag for force create", () => {
     const { names, flags } = parseArgs(["node", "arbors", "add", "-C", "my-branch", "main"]);
     expect(names).toEqual(["my-branch", "main"]);
     expect(flags.create).toBe("true");
     expect(flags.forceCreate).toBe("true");
   });
 
-  it("should map --plain to --porcelain with deprecation flag", () => {
+  test("should map --plain to --porcelain with deprecation flag", () => {
     const { flags } = parseArgs(["node", "arbors", "list", "--plain"]);
     expect(flags.porcelain).toBe("true");
     expect(flags._plainDeprecated).toBe("true");
   });
 
-  it("should support --porcelain directly", () => {
+  test("should support --porcelain directly", () => {
     const { flags } = parseArgs(["node", "arbors", "list", "--porcelain"]);
     expect(flags.porcelain).toBe("true");
     expect(flags._plainDeprecated).toBeUndefined();
   });
 
-  it("should handle --force flag with multiple names", () => {
+  test("should handle --force flag with multiple names", () => {
     const { names, flags } = parseArgs([
       "node",
       "arbors",
@@ -160,13 +160,13 @@ describe("parseArgs — multiple names", () => {
     expect(flags.force).toBe("true");
   });
 
-  it("should handle global flags before command", () => {
+  test("should handle global flags before command", () => {
     const { command, flags } = parseArgs(["node", "arbors", "--version"]);
     expect(command).toBeUndefined();
     expect(flags.version).toBe("true");
   });
 
-  it("should handle flags mixed with positional args", () => {
+  test("should handle flags mixed with positional args", () => {
     const { command, names, flags } = parseArgs([
       "node",
       "arbors",
@@ -180,7 +180,7 @@ describe("parseArgs — multiple names", () => {
     expect(flags.force).toBe("true");
   });
 
-  it("should separate args after -- into rest", () => {
+  test("should separate args after -- into rest", () => {
     const { command, names, rest } = parseArgs([
       "node",
       "arbors",
@@ -195,7 +195,7 @@ describe("parseArgs — multiple names", () => {
     expect(rest).toEqual(["pnpm", "test"]);
   });
 
-  it("should treat flags after -- as rest args", () => {
+  test("should treat flags after -- as rest args", () => {
     const { flags, rest } = parseArgs([
       "node",
       "arbors",
@@ -209,7 +209,7 @@ describe("parseArgs — multiple names", () => {
     expect(rest).toEqual(["git", "--version"]);
   });
 
-  it("should handle CI flags", () => {
+  test("should handle CI flags", () => {
     const { flags } = parseArgs([
       "node",
       "arbors",
@@ -226,26 +226,26 @@ describe("parseArgs — multiple names", () => {
     expect(flags.quiet).toBe("true");
   });
 
-  it("should handle prune flags", () => {
+  test("should handle prune flags", () => {
     const { command, flags } = parseArgs(["node", "arbors", "prune", "--merged", "-n"]);
     expect(command).toBe("prune");
     expect(flags.merged).toBe("true");
     expect(flags.dryRun).toBe("true");
   });
 
-  it("should handle config get with key as positional", () => {
+  test("should handle config get with key as positional", () => {
     const { command, names } = parseArgs(["node", "arbors", "config", "runtime"]);
     expect(command).toBe("config");
     expect(names).toEqual(["runtime"]);
   });
 
-  it("should handle config set with key and value", () => {
+  test("should handle config set with key and value", () => {
     const { command, names } = parseArgs(["node", "arbors", "config", "language", "ko"]);
     expect(command).toBe("config");
     expect(names).toEqual(["language", "ko"]);
   });
 
-  it("should handle config --global --unset flags", () => {
+  test("should handle config --global --unset flags", () => {
     const { command, names, flags } = parseArgs([
       "node",
       "arbors",
@@ -260,7 +260,7 @@ describe("parseArgs — multiple names", () => {
     expect(flags.unset).toBe("true");
   });
 
-  it("should handle completion command", () => {
+  test("should handle completion command", () => {
     const { command, names } = parseArgs(["node", "arbors", "completion", "zsh"]);
     expect(command).toBe("completion");
     expect(names).toEqual(["zsh"]);
@@ -268,11 +268,11 @@ describe("parseArgs — multiple names", () => {
 });
 
 describe("removeSummary i18n", () => {
-  it("should format English summary", () => {
+  test("should format English summary", () => {
     expect(en.removeSummary(2, 1)).toBe("Summary: 2 removed, 1 failed");
   });
 
-  it("should format zero failures", () => {
+  test("should format zero failures", () => {
     expect(en.removeSummary(3, 0)).toBe("Summary: 3 removed, 0 failed");
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { matchesPattern, getIgnoredFiles, copyIgnoredFiles } from "../src/git/exclude";
 import type { RuntimeAdapter } from "../src/runtime/adapter";
 
@@ -16,23 +16,23 @@ const createMockAdapter = (overrides: Partial<RuntimeAdapter> = {}): RuntimeAdap
 });
 
 describe("matchesPattern", () => {
-  it("should match basename when pattern has no slash", () => {
+  test("should match basename when pattern has no slash", () => {
     expect(matchesPattern(".env", ".env*")).toBe(true);
     expect(matchesPattern(".env.local", ".env*")).toBe(true);
     expect(matchesPattern("frontend/apps/company/.env.development.local", ".env*")).toBe(true);
   });
 
-  it("should not match unrelated files", () => {
+  test("should not match unrelated files", () => {
     expect(matchesPattern("README.md", ".env*")).toBe(false);
     expect(matchesPattern("package.json", ".env*")).toBe(false);
   });
 
-  it("should match full path when pattern contains slash", () => {
+  test("should match full path when pattern contains slash", () => {
     expect(matchesPattern("frontend/apps/company/.env.local", "frontend/**/.env*")).toBe(true);
     expect(matchesPattern("backend/.env", "frontend/**/.env*")).toBe(false);
   });
 
-  it("should handle exact name match without wildcard", () => {
+  test("should handle exact name match without wildcard", () => {
     expect(matchesPattern(".env", ".env")).toBe(true);
     expect(matchesPattern("apps/.env", ".env")).toBe(true);
     expect(matchesPattern(".env.local", ".env")).toBe(false);
@@ -40,11 +40,15 @@ describe("matchesPattern", () => {
 });
 
 describe("getIgnoredFiles", () => {
-  it("should parse git ls-files output", async () => {
+  test("should parse git ls-files output", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async (_cmd: string, args?: string[]) => {
         if (args?.[0] === "ls-files") {
-          return { stdout: ".env\n.env.local\nfrontend/.env.development.local\n", stderr: "", exitCode: 0 };
+          return {
+            stdout: ".env\n.env.local\nfrontend/.env.development.local\n",
+            stderr: "",
+            exitCode: 0,
+          };
         }
         return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
       }),
@@ -54,7 +58,7 @@ describe("getIgnoredFiles", () => {
     expect(files).toEqual([".env", ".env.local", "frontend/.env.development.local"]);
   });
 
-  it("should return empty array on git command failure", async () => {
+  test("should return empty array on git command failure", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async (_cmd: string, args?: string[]) => {
         if (args?.[0] === "ls-files") {
@@ -70,13 +74,14 @@ describe("getIgnoredFiles", () => {
 });
 
 describe("copyIgnoredFiles", () => {
-  it("should copy all ignored files except those matching exclude patterns", async () => {
+  test("should copy all ignored files except those matching exclude patterns", async () => {
     const copyFn = vi.fn();
     const adapter = createMockAdapter({
       exec: vi.fn(async (_cmd: string, args?: string[]) => {
         if (args?.[0] === "ls-files") {
           return {
-            stdout: ".env\n.env.local\nnode_modules/.bin/tsc\ndist/index.js\nfrontend/.env.development.local\n.claude/settings.json\nCLAUDE.md\n",
+            stdout:
+              ".env\n.env.local\nnode_modules/.bin/tsc\ndist/index.js\nfrontend/.env.development.local\n.claude/settings.json\nCLAUDE.md\n",
             stderr: "",
             exitCode: 0,
           };
@@ -89,13 +94,24 @@ describe("copyIgnoredFiles", () => {
     const copied = await copyIgnoredFiles(adapter, "/worktree", ["node_modules", "dist"]);
 
     expect(copied).toHaveLength(5);
-    expect(copied).toEqual(expect.arrayContaining([".env", ".env.local", "frontend/.env.development.local", ".claude/settings.json", "CLAUDE.md"]));
+    expect(copied).toEqual(
+      expect.arrayContaining([
+        ".env",
+        ".env.local",
+        "frontend/.env.development.local",
+        ".claude/settings.json",
+        "CLAUDE.md",
+      ]),
+    );
     expect(copyFn).toHaveBeenCalledTimes(5);
-    expect(copyFn).not.toHaveBeenCalledWith("/repo/node_modules/.bin/tsc", "/worktree/node_modules/.bin/tsc");
+    expect(copyFn).not.toHaveBeenCalledWith(
+      "/repo/node_modules/.bin/tsc",
+      "/worktree/node_modules/.bin/tsc",
+    );
     expect(copyFn).not.toHaveBeenCalledWith("/repo/dist/index.js", "/worktree/dist/index.js");
   });
 
-  it("should copy all files when exclude list is empty", async () => {
+  test("should copy all files when exclude list is empty", async () => {
     const copyFn = vi.fn();
     const adapter = createMockAdapter({
       exec: vi.fn(async (_cmd: string, args?: string[]) => {
@@ -112,7 +128,7 @@ describe("copyIgnoredFiles", () => {
     expect(copyFn).toHaveBeenCalledTimes(2);
   });
 
-  it("should skip non-copyable entries", async () => {
+  test("should skip non-copyable entries", async () => {
     const adapter = createMockAdapter({
       exec: vi.fn(async (_cmd: string, args?: string[]) => {
         if (args?.[0] === "ls-files") {
@@ -129,7 +145,7 @@ describe("copyIgnoredFiles", () => {
     expect(copied).toEqual([".env"]);
   });
 
-  it("should skip entries whose source does not exist", async () => {
+  test("should skip entries whose source does not exist", async () => {
     const copyFn = vi.fn();
     const adapter = createMockAdapter({
       exec: vi.fn(async (_cmd: string, args?: string[]) => {

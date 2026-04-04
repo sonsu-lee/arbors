@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, test, expect } from "vitest";
 import { mergeConfig, loadConfig } from "../src/config";
 import type { ArborConfig } from "../src/config";
 
 describe("mergeConfig", () => {
-  it("should override base values with override values", () => {
+  test("should override base values with override values", () => {
     // Given: a base config and an override with different runtime
     const base = { runtime: "bun", language: "ko" } as ArborConfig;
     const override = { runtime: "node" } as Partial<ArborConfig>;
@@ -16,7 +16,7 @@ describe("mergeConfig", () => {
     expect(result.language).toBe("ko");
   });
 
-  it("should not mutate the original base object", () => {
+  test("should not mutate the original base object", () => {
     // Given: a base config
     const base = { runtime: "bun", language: "en" } as ArborConfig;
     const original = structuredClone(base);
@@ -28,7 +28,7 @@ describe("mergeConfig", () => {
     expect(base).toEqual(original);
   });
 
-  it("should return base when override is empty", () => {
+  test("should return base when override is empty", () => {
     // Given: a base config and an empty override
     const base = { runtime: "node", language: "ja" } as ArborConfig;
 
@@ -49,7 +49,7 @@ describe("loadConfig", () => {
   const mockExists = (files: Record<string, string>) => async (path: string) =>
     Object.hasOwn(files, path);
 
-  it("should return defaults when no config files exist", async () => {
+  test("should return defaults when no config files exist", async () => {
     // Given: no config files on disk
     const readFile = mockReadFile({});
     const exists = mockExists({});
@@ -61,10 +61,21 @@ describe("loadConfig", () => {
     expect(config.runtime).toBe("node");
     expect(config.language).toBe("en");
     expect(config.packageManager).toBe("auto");
-    expect(config.excludeFromCopy).toEqual(["node_modules", "dist", "build", "out", ".next", ".nuxt", ".turbo", ".cache", "coverage", "*.log"]);
+    expect(config.excludeFromCopy).toEqual([
+      "node_modules",
+      "dist",
+      "build",
+      "out",
+      ".next",
+      ".nuxt",
+      ".turbo",
+      ".cache",
+      "coverage",
+      "*.log",
+    ]);
   });
 
-  it("should merge project config over global config", async () => {
+  test("should merge project config over global config", async () => {
     // Given: global sets runtime=bun, project sets runtime=node
     const home = process.env.HOME ?? "/tmp";
     const globalPath = `${home}/.arbors/config.json`;
@@ -86,7 +97,7 @@ describe("loadConfig", () => {
     expect(config.language).toBe("ko");
   });
 
-  it("should handle malformed config files gracefully", async () => {
+  test("should handle malformed config files gracefully", async () => {
     // Given: a global config with invalid JSON
     const home = process.env.HOME ?? "/tmp";
     const globalPath = `${home}/.arbors/config.json`;
