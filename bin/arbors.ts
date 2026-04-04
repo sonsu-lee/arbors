@@ -6,6 +6,7 @@ import {
   getGlobalConfigPath,
   getProjectConfigPath,
 } from "../src/config";
+import { runHook } from "../src/hooks";
 import { copyIgnoredFiles } from "../src/git/exclude";
 import { validateWorktreeName, hasUncommittedChanges } from "../src/git/safety";
 import {
@@ -88,6 +89,10 @@ const matchFlag = (arg: string, flags: Record<string, string>): boolean => {
   }
   if (arg === "--unset") {
     flags.unset = "true";
+    return true;
+  }
+  if (arg === "--no-hooks") {
+    flags.noHooks = "true";
     return true;
   }
   return false;
@@ -304,6 +309,22 @@ const main = async () => {
         const repoRoot = await getMainRepoRoot(adapter);
         await registerProject(adapter, name, repoRoot);
         await registerWorktree(adapter, worktreePath, name, repoRoot);
+
+        if (!flags.noHooks) {
+          const hookOk = await runHook(
+            adapter,
+            "postCreate",
+            {
+              repoRoot,
+              worktreePath,
+              branch: name,
+            },
+            config.hooks,
+          );
+          if (!hookOk && !flags.quiet) {
+            console.error(chalk.yellow("warning: postCreate hook failed"));
+          }
+        }
       } catch (setupErr) {
         error((setupErr as Error).message);
         if (created) {
@@ -431,6 +452,28 @@ const main = async () => {
           }
         }
 
+        // preRemove hook — blocks removal on failure unless --force
+        if (!flags.noHooks) {
+          const preOk = await runHook(
+            adapter,
+            "preRemove",
+            {
+              repoRoot,
+              worktreePath: target.path,
+              branch: target.branch ?? branch,
+            },
+            config.hooks,
+          );
+          if (!preOk && !flags.force) {
+            error(`preRemove hook failed for ${branch}`);
+            hint("Use -f to force removal:");
+            hint(`    arbors remove -f ${branch}`);
+            failed++;
+            console.log();
+            continue;
+          }
+        }
+
         try {
           await withSpinner(msg.removing, async () => {
             await removeWorktree(adapter, target.path, target.branch);
@@ -438,6 +481,19 @@ const main = async () => {
           });
           console.log(chalk.green(`✓ ${msg.removed}: ${branch}`));
           removed++;
+
+          if (!flags.noHooks) {
+            await runHook(
+              adapter,
+              "postRemove",
+              {
+                repoRoot,
+                worktreePath: target.path,
+                branch: target.branch ?? branch,
+              },
+              config.hooks,
+            ).catch(() => {});
+          }
         } catch (err) {
           error((err as Error).message);
           failed++;
@@ -699,6 +755,90 @@ const main = async () => {
           `  ${chalk.white(key)}: ${chalk.gray(Array.isArray(value) ? value.join(", ") : String(value))}`,
         );
       });
+      break;
+    }
+
+    case "doctor": {
+      console.log();
+      console.log(chalk.cyan.bold("arbors doctor"));
+      console.log();
+
+      const checks: { label: string; ok: boolean; detail: string }[] = [];
+
+      // Git version
+      const gitVer = await adapter.exec("git", ["--version"]);
+      const gitVersion = gitVer.stdout.trim().replace("git version ", "");
+      checks.push({
+        label: "git",
+        ok: gitVer.exitCode === 0,
+        detail: gitVer.exitCode === 0 ? gitVersion : "not found",
+      });
+
+      // Node version
+      const nodeVersion = process.version;
+      const nodeMajor = Number.parseInt(nodeVersion.slice(1), 10);
+      checks.push({ label: "node", ok: nodeMajor >= 20, detail: nodeVersion });
+
+      // Package manager
+      const pmCheck = await adapter
+        .exec("pnpm", ["--version"])
+        .catch(() => ({ exitCode: 1, stdout: "", stderr: "" }));
+      const yarnCheck = await adapter
+        .exec("yarn", ["--version"])
+        .catch(() => ({ exitCode: 1, stdout: "", stderr: "" }));
+      const npmCheck = await adapter
+        .exec("npm", ["--version"])
+        .catch(() => ({ exitCode: 1, stdout: "", stderr: "" }));
+      const pmAvailable = [
+        pmCheck.exitCode === 0 ? `pnpm ${pmCheck.stdout.trim()}` : null,
+        yarnCheck.exitCode === 0 ? `yarn ${yarnCheck.stdout.trim()}` : null,
+        npmCheck.exitCode === 0 ? `npm ${npmCheck.stdout.trim()}` : null,
+      ].filter(Boolean);
+      checks.push({
+        label: "package manager",
+        ok: pmAvailable.length > 0,
+        detail: pmAvailable.join(", ") || "none found",
+      });
+
+      // gh CLI
+      const ghCheck = await adapter
+        .exec("gh", ["--version"])
+        .catch(() => ({ exitCode: 1, stdout: "", stderr: "" }));
+      checks.push({
+        label: "gh cli",
+        ok: ghCheck.exitCode === 0,
+        detail:
+          ghCheck.exitCode === 0
+            ? ghCheck.stdout.split("\n")[0].trim()
+            : "not found (needed for prune --merged)",
+      });
+
+      // Registry
+      const home = (await import("node:os")).homedir();
+      const dbPath = (await import("node:path")).join(home, ".arbors", "db.json");
+      const dbExists = await adapter.exists(dbPath);
+      checks.push({
+        label: "registry",
+        ok: true,
+        detail: dbExists ? dbPath : "not yet created (will be created on first use)",
+      });
+
+      // Shell wrapper
+      const shellWrapperZsh = (await import("node:path")).resolve(
+        (await import("node:url")).fileURLToPath(import.meta.url),
+        "../../shell/arbors-wrapper.zsh",
+      );
+      const shellWrapperExists = await adapter.exists(shellWrapperZsh);
+      checks.push({
+        label: "shell wrapper",
+        ok: shellWrapperExists,
+        detail: shellWrapperExists ? "found" : "not found (cd after add/switch won't work)",
+      });
+
+      for (const { label, ok, detail } of checks) {
+        const icon = ok ? chalk.green("✓") : chalk.yellow("!");
+        console.log(`  ${icon} ${chalk.white(label)}: ${chalk.gray(detail)}`);
+      }
       break;
     }
 

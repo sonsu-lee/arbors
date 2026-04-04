@@ -1,4 +1,4 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { mergeConfig, loadConfig } from "../src/config";
 import type { ArborConfig } from "../src/config";
 
@@ -95,6 +95,39 @@ describe("loadConfig", () => {
     // Then: project override wins, global-only values preserved
     expect(config.runtime).toBe("node");
     expect(config.language).toBe("ko");
+  });
+
+  test("should apply env var overrides with highest precedence", async () => {
+    const home = process.env.HOME ?? "/tmp";
+    const globalPath = `${home}/.arbors/config.json`;
+    const files: Record<string, string> = {
+      [globalPath]: JSON.stringify({ runtime: "bun", language: "ko" }),
+    };
+    const readFile = mockReadFile(files);
+    const exists = mockExists(files);
+
+    vi.stubEnv("ARBORS_RUNTIME", "node");
+    vi.stubEnv("ARBORS_LANGUAGE", "ja");
+
+    const config = await loadConfig(readFile, exists);
+    expect(config.runtime).toBe("node");
+    expect(config.language).toBe("ja");
+
+    vi.unstubAllEnvs();
+  });
+
+  test("should ignore invalid env var values", async () => {
+    const readFile = mockReadFile({});
+    const exists = mockExists({});
+
+    vi.stubEnv("ARBORS_RUNTIME", "deno");
+    vi.stubEnv("ARBORS_LANGUAGE", "fr");
+
+    const config = await loadConfig(readFile, exists);
+    expect(config.runtime).toBe("node"); // default, "deno" ignored
+    expect(config.language).toBe("en"); // default, "fr" ignored
+
+    vi.unstubAllEnvs();
   });
 
   test("should handle malformed config files gracefully", async () => {

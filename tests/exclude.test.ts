@@ -1,5 +1,10 @@
 import { describe, test, expect, vi } from "vitest";
-import { matchesPattern, getIgnoredFiles, copyIgnoredFiles } from "../src/git/exclude";
+import {
+  matchesPattern,
+  getIgnoredFiles,
+  copyIgnoredFiles,
+  loadIncludePatterns,
+} from "../src/git/exclude";
 import type { RuntimeAdapter } from "../src/runtime/adapter";
 
 const MAIN_PORCELAIN = "worktree /repo\nHEAD abc\nbranch refs/heads/main";
@@ -145,6 +150,33 @@ describe("copyIgnoredFiles", () => {
     expect(copied).toEqual([".env"]);
   });
 
+  test("should include files matching .arborsinclude even if excluded", async () => {
+    const adapter = createMockAdapter({
+      exec: vi.fn(async (_cmd: string, args?: string[]) => {
+        if (args?.[0] === "ls-files") {
+          return {
+            stdout: ".env\nnode_modules/.cache/foo\n.claude/settings.json\n",
+            stderr: "",
+            exitCode: 0,
+          };
+        }
+        return { stdout: MAIN_PORCELAIN, stderr: "", exitCode: 0 };
+      }),
+      readFile: vi.fn(async (path: string) => {
+        if (path === "/repo/.arborsinclude") return ".env\n.claude/**\n# comment\n";
+        return "";
+      }),
+      exists: vi.fn(async () => true),
+      copy: vi.fn(),
+    });
+
+    // node_modules is excluded, .env and .claude/ are in .arborsinclude → included
+    const copied = await copyIgnoredFiles(adapter, "/worktree", ["node_modules"]);
+    expect(copied).toContain(".env");
+    expect(copied).toContain(".claude/settings.json");
+    expect(copied).not.toContain("node_modules/.cache/foo");
+  });
+
   test("should skip entries whose source does not exist", async () => {
     const copyFn = vi.fn();
     const adapter = createMockAdapter({
@@ -163,5 +195,22 @@ describe("copyIgnoredFiles", () => {
     expect(copied).toEqual([".env"]);
     expect(copyFn).toHaveBeenCalledTimes(1);
     expect(copyFn).not.toHaveBeenCalledWith("/repo/backend/.env", "/worktree/backend/.env");
+  });
+});
+
+describe("loadIncludePatterns", () => {
+  test("should return empty array when no .arborsinclude exists", async () => {
+    const adapter = createMockAdapter({ exists: vi.fn(async () => false) });
+    const patterns = await loadIncludePatterns(adapter, "/repo");
+    expect(patterns).toEqual([]);
+  });
+
+  test("should parse .arborsinclude ignoring comments and blank lines", async () => {
+    const adapter = createMockAdapter({
+      exists: vi.fn(async () => true),
+      readFile: vi.fn(async () => ".env\n\n# this is a comment\n.claude/\nCLAUDE.md\n"),
+    });
+    const patterns = await loadIncludePatterns(adapter, "/repo");
+    expect(patterns).toEqual([".env", ".claude/", "CLAUDE.md"]);
   });
 });

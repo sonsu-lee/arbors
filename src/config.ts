@@ -1,20 +1,40 @@
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
+export interface HooksConfig {
+  postCreate?: string;
+  preRemove?: string;
+  postRemove?: string;
+  postSwitch?: string;
+}
+
 export interface ArborConfig {
   runtime: "bun" | "node";
   language: "ko" | "en" | "ja";
   packageManager: "auto" | "pnpm" | "yarn" | "npm";
   excludeFromCopy: string[];
   worktreeDir: string;
+  hooks: HooksConfig;
 }
 
 const DEFAULT_CONFIG: ArborConfig = {
   runtime: "node",
   language: "en",
   packageManager: "auto",
-  excludeFromCopy: ["node_modules", "dist", "build", "out", ".next", ".nuxt", ".turbo", ".cache", "coverage", "*.log"],
+  excludeFromCopy: [
+    "node_modules",
+    "dist",
+    "build",
+    "out",
+    ".next",
+    ".nuxt",
+    ".turbo",
+    ".cache",
+    "coverage",
+    "*.log",
+  ],
   worktreeDir: "~/arbors/{repo}",
+  hooks: {},
 } satisfies ArborConfig;
 
 const GLOBAL_CONFIG_PATH = join(homedir(), ".arbors", "config.json");
@@ -40,20 +60,48 @@ const readJsonFile = async (
   }
 };
 
+const loadEnvOverrides = (): Partial<ArborConfig> => {
+  const env: Partial<ArborConfig> = {};
+  if (process.env.ARBORS_RUNTIME === "bun" || process.env.ARBORS_RUNTIME === "node") {
+    env.runtime = process.env.ARBORS_RUNTIME;
+  }
+  if (
+    process.env.ARBORS_LANGUAGE === "ko" ||
+    process.env.ARBORS_LANGUAGE === "en" ||
+    process.env.ARBORS_LANGUAGE === "ja"
+  ) {
+    env.language = process.env.ARBORS_LANGUAGE;
+  }
+  if (process.env.ARBORS_WORKTREE_DIR) {
+    env.worktreeDir = process.env.ARBORS_WORKTREE_DIR;
+  }
+  if (
+    process.env.ARBORS_PACKAGE_MANAGER === "auto" ||
+    process.env.ARBORS_PACKAGE_MANAGER === "pnpm" ||
+    process.env.ARBORS_PACKAGE_MANAGER === "yarn" ||
+    process.env.ARBORS_PACKAGE_MANAGER === "npm"
+  ) {
+    env.packageManager = process.env.ARBORS_PACKAGE_MANAGER;
+  }
+  return env;
+};
+
 export const loadConfig = async (
   readFile: (path: string) => Promise<string>,
   exists: (path: string) => Promise<boolean>,
   projectRoot?: string,
 ): Promise<ArborConfig> => {
   const globalOverride = await readJsonFile(readFile, exists, GLOBAL_CONFIG_PATH);
-  const merged = mergeConfig(DEFAULT_CONFIG, globalOverride);
+  let merged = mergeConfig(DEFAULT_CONFIG, globalOverride);
 
-  if (!projectRoot) return merged;
+  if (projectRoot) {
+    const projectConfigPath = resolve(projectRoot, PROJECT_CONFIG_DIR, PROJECT_CONFIG_FILE);
+    const projectOverride = await readJsonFile(readFile, exists, projectConfigPath);
+    merged = mergeConfig(merged, projectOverride);
+  }
 
-  const projectConfigPath = resolve(projectRoot, PROJECT_CONFIG_DIR, PROJECT_CONFIG_FILE);
-  const projectOverride = await readJsonFile(readFile, exists, projectConfigPath);
-
-  return mergeConfig(merged, projectOverride);
+  // Env vars have highest precedence
+  return mergeConfig(merged, loadEnvOverrides());
 };
 
 export const getGlobalConfigPath = (): string => GLOBAL_CONFIG_PATH;

@@ -38,6 +38,23 @@ export const getIgnoredFiles = async (adapter: RuntimeAdapter): Promise<string[]
   return stdout.split("\n").filter(Boolean);
 };
 
+export const loadIncludePatterns = async (
+  adapter: RuntimeAdapter,
+  repoRoot: string,
+): Promise<string[]> => {
+  const includePath = join(repoRoot, ".arborsinclude");
+  try {
+    if (!(await adapter.exists(includePath))) return [];
+    const content = await adapter.readFile(includePath);
+    return content
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"));
+  } catch {
+    return [];
+  }
+};
+
 export const copyIgnoredFiles = async (
   adapter: RuntimeAdapter,
   worktreePath: string,
@@ -45,7 +62,18 @@ export const copyIgnoredFiles = async (
 ): Promise<string[]> => {
   const repoRoot = await getMainRepoRoot(adapter);
   const allIgnored = await getIgnoredFiles(adapter);
-  const entries = allIgnored.filter((f) => !excludePatterns.some((p) => matchesPattern(f, p)));
+
+  // Load .arborsinclude patterns (explicit allowlist)
+  const includePatterns = await loadIncludePatterns(adapter, repoRoot);
+
+  const entries = allIgnored.filter((f) => {
+    // If file matches an include pattern, always copy it (include wins over exclude)
+    if (includePatterns.some((p) => matchesPattern(f, p))) {
+      return true;
+    }
+    // Otherwise, apply exclude blocklist
+    return !excludePatterns.some((p) => matchesPattern(f, p));
+  });
 
   const copied: string[] = [];
 

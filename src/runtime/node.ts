@@ -6,7 +6,11 @@ import type { RuntimeAdapter } from "./adapter";
 export const createNodeAdapter = (): RuntimeAdapter => ({
   async exec(cmd, args, options) {
     return new Promise((resolve) => {
-      const proc = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"], cwd: options?.cwd });
+      const proc = spawn(cmd, args, {
+        stdio: ["ignore", "pipe", "pipe"],
+        cwd: options?.cwd,
+        env: options?.env ? { ...process.env, ...options.env } : undefined,
+      });
       let stdout = "";
       let stderr = "";
       proc.stdout.on("data", (chunk: Buffer) => {

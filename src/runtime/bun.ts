@@ -2,10 +2,12 @@ import { dirname } from "node:path";
 import type { RuntimeAdapter } from "./adapter";
 
 export const createBunAdapter = (): RuntimeAdapter => ({
-  async exec(cmd, args) {
+  async exec(cmd, args, options) {
     const proc = Bun.spawn([cmd, ...args], {
       stdout: "pipe",
       stderr: "pipe",
+      cwd: options?.cwd,
+      env: options?.env ? { ...Bun.env, ...options.env } : undefined,
     });
     const [stdout, stderr] = await Promise.all([
       new Response(proc.stdout).text(),
