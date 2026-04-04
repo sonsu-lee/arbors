@@ -146,7 +146,121 @@ const hint = (message: string) => {
   console.error(chalk.gray(`hint: ${message}`));
 };
 
-const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
+const COMMAND_HELP: Record<string, string> = {
+  add: `usage: arbors add [-c | -C] <branch> [<start-point>]
+   or: arbors add <existing-branch>
+
+Checkout an existing branch as a worktree, or create a new one.
+Automatically checks local branches first, then remote.
+
+Options:
+  -c              Create new branch (git switch -c)
+  -C              Force create, reset if exists (git switch -C)
+  --no-copy       Skip copying ignored files
+  --no-install    Skip dependency installation
+  --no-hooks      Skip lifecycle hooks
+  -q, --quiet     Minimal output
+
+Examples:
+  arbors add feature/login          Checkout existing branch
+  arbors add -c feature/login       Create from default branch
+  arbors add -c feature/login main  Create from main`,
+
+  switch: `usage: arbors switch <branch>
+
+Switch to an existing worktree by branch name.
+
+Examples:
+  arbors switch feature/login`,
+
+  remove: `usage: arbors remove [-f] <branch> [<branch>...]
+
+Remove one or more worktrees. Checks for uncommitted changes.
+
+Options:
+  -f, --force     Skip uncommitted changes check
+  --no-hooks      Skip preRemove/postRemove hooks
+
+Aliases: -r
+
+Examples:
+  arbors remove feature/login
+  arbors remove -f branch-a branch-b`,
+
+  list: `usage: arbors list [--porcelain]
+
+List all managed worktrees.
+
+Options:
+  --porcelain     Machine-readable TAB-separated output`,
+
+  run: `usage: arbors run <branch> -- <command...>
+
+Run a command in a worktree's directory without changing to it.
+
+Examples:
+  arbors run feature/login -- pnpm test
+  arbors run feature/login -- git status`,
+
+  status: `usage: arbors status [--porcelain]
+
+Show information about the current worktree.
+
+Options:
+  --porcelain     Machine-readable TAB-separated output`,
+
+  prune: `usage: arbors prune [-n] [--merged] [-f]
+
+Clean up stale or merged worktrees.
+
+Options:
+  -n, --dry-run   Preview without making changes
+  --merged        Remove worktrees with merged PRs (requires gh CLI)
+  -f, --force     Include dirty worktrees when using --merged
+
+Examples:
+  arbors prune              Remove stale registry entries
+  arbors prune -n           Preview what would be removed
+  arbors prune --merged     Remove merged PR worktrees
+  arbors prune --merged -n  Preview merged worktrees`,
+
+  config: `usage: arbors config [<key> [<value>]] [--global] [--unset]
+
+Manage arbors configuration.
+
+Options:
+  --global        Write to global config (~/.arbors/config.json)
+  --unset         Remove a config key
+
+Examples:
+  arbors config                        Show all config
+  arbors config language               Get a value
+  arbors config language ko            Set project value
+  arbors config --global language ko   Set global value
+  arbors config --unset worktreeDir    Remove a key
+
+Keys: runtime, language, packageManager, excludeFromCopy, worktreeDir, hooks`,
+
+  doctor: `usage: arbors doctor
+
+Check environment health: git, node, package managers, gh CLI,
+registry database, and shell wrapper status.`,
+
+  completion: `usage: arbors completion bash|zsh
+
+Output shell completion script.
+
+Examples:
+  eval "$(arbors completion zsh)"    # add to ~/.zshrc
+  eval "$(arbors completion bash)"   # add to ~/.bashrc`,
+};
+
+const printHelp = (msg: typeof import("../src/i18n/en.js").en, command?: string) => {
+  if (command && command in COMMAND_HELP) {
+    console.log(COMMAND_HELP[command]);
+    return;
+  }
+
   console.log(chalk.cyan.bold(msg.version(VERSION)));
   console.log();
   console.log(chalk.white(msg.usage));
@@ -159,23 +273,30 @@ const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
   console.log("  remove (-r) <branch...> [-f]    Remove worktree(s)");
   console.log("  list [--porcelain]              List worktrees");
   console.log("  run <branch> -- <command...>    Run command in worktree context");
-  console.log("  status                          Show current worktree info");
+  console.log("  status [--porcelain]            Show current worktree info");
   console.log("  prune [-n] [--merged]           Clean up stale/merged worktrees");
+  console.log("  config [key] [value]            Manage configuration");
   console.log("  excluded                        Show exclude-from-copy patterns");
-  console.log("  config                          Show current config");
+  console.log("  doctor                          Check environment health");
+  console.log("  completion bash|zsh             Generate shell completion");
   console.log();
   console.log(chalk.white(msg.options));
   console.log("  -c                            Create new branch (git switch -c)");
   console.log("  -C                            Force create (git switch -C)");
-  console.log("  -f, --force                   Force remove (skip uncommitted changes check)");
+  console.log("  -f, --force                   Force operation");
   console.log("  -n, --dry-run                 Preview without making changes");
   console.log("  -q, --quiet                   Minimal output");
   console.log("  --no-copy                     Skip copying ignored files");
   console.log("  --no-install                  Skip dependency installation");
+  console.log("  --no-hooks                    Skip lifecycle hooks");
   console.log("  --porcelain                   Machine-readable stable output");
   console.log("  --merged                      Target merged PR worktrees (prune)");
+  console.log("  --global                      Use global config scope");
+  console.log("  --unset                       Remove a config key");
   console.log("  -h, --help                    Show help");
   console.log("  -v, --version                 Show version");
+  console.log();
+  console.log(`Run ${chalk.cyan("arbors <command> -h")} for detailed help on a command.`);
 };
 
 const getProjectRoot = async (): Promise<string | undefined> => {
@@ -226,7 +347,7 @@ const main = async () => {
   }
 
   if (flags.help) {
-    printHelp(msg);
+    printHelp(msg, command);
     return;
   }
 
