@@ -16,10 +16,10 @@ beforeAll(async () => {
 }, 30_000);
 
 describe("bundle output", () => {
-  test("should produce a single entry file without chunks", async () => {
+  test("should produce CLI and library entry files", async () => {
     const files = await readdir(DIST);
-    const jsFiles = files.filter((f) => f.endsWith(".js") && !f.endsWith(".map"));
-    expect(jsFiles).toEqual(["arbors.js"]);
+    const jsFiles = files.filter((f) => f.endsWith(".js") && !f.endsWith(".map")).sort();
+    expect(jsFiles).toEqual(["arbors.js", "index.js"]);
   });
 
   test("should inject createRequire shim before __require helper", () => {
