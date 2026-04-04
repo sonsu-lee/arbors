@@ -5,30 +5,71 @@ import { en } from "../src/i18n/en";
  * parseArgs is defined inline in bin/arbors.ts and not exported.
  * We replicate the logic here to test the parsing behavior in isolation.
  */
+const matchFlag = (arg: string, flags: Record<string, string>): boolean => {
+  if (arg === "--porcelain") {
+    flags.porcelain = "true";
+    return true;
+  }
+  if (arg === "--plain") {
+    flags.porcelain = "true";
+    flags._plainDeprecated = "true";
+    return true;
+  }
+  if (arg === "--create" || arg === "-c") {
+    flags.create = "true";
+    return true;
+  }
+  if (arg === "-C") {
+    flags.create = "true";
+    flags.forceCreate = "true";
+    return true;
+  }
+  if (arg === "--force" || arg === "-f") {
+    flags.force = "true";
+    return true;
+  }
+  if (arg === "--help" || arg === "-h") {
+    flags.help = "true";
+    return true;
+  }
+  if (arg === "--version" || arg === "-v") {
+    flags.version = "true";
+    return true;
+  }
+  return false;
+};
+
 const parseArgs = (argv: string[]) => {
   const args = argv.slice(2);
-  const command = args[0];
 
-  const flags = args.reduce<Record<string, string>>((acc, arg, i) => {
-    if (arg.startsWith("--") && args[i + 1] && !args[i + 1].startsWith("-")) {
-      acc[arg.slice(2)] = args[i + 1];
+  const flags: Record<string, string> = {};
+  const names: string[] = [];
+  let command: string | undefined;
+
+  for (const arg of args) {
+    if (matchFlag(arg, flags)) continue;
+    if (arg.startsWith("-")) continue;
+
+    if (!command) {
+      command = arg;
+    } else {
+      names.push(arg);
     }
-    if (arg === "--plain") acc.plain = "true";
-    if (arg === "--create" || arg === "-c") acc.create = "true";
-    if (arg === "--force" || arg === "-f") acc.force = "true";
-    if (arg === "--help" || arg === "-h") acc.help = "true";
-    if (arg === "--version" || arg === "-v") acc.version = "true";
-    return acc;
-  }, {});
-
-  const names = args.slice(1).filter((a) => !a.startsWith("-") && !Object.values(flags).includes(a));
+  }
 
   return { command, names, flags };
 };
 
 describe("parseArgs — multiple names", () => {
   it("should collect multiple branch names", () => {
-    const { names } = parseArgs(["node", "arbors", "remove", "feature/a", "feature/b", "feature/c"]);
+    const { names } = parseArgs([
+      "node",
+      "arbors",
+      "remove",
+      "feature/a",
+      "feature/b",
+      "feature/c",
+    ]);
     expect(names).toEqual(["feature/a", "feature/b", "feature/c"]);
   });
 
@@ -42,14 +83,60 @@ describe("parseArgs — multiple names", () => {
     expect(names).toEqual([]);
   });
 
-  it("should exclude flag values from names", () => {
-    const { names, flags } = parseArgs(["node", "arbors", "add", "-c", "my-branch", "--base", "main"]);
-    expect(names).toEqual(["my-branch"]);
-    expect(flags.base).toBe("main");
+  it("should collect start-point as second positional arg", () => {
+    const { names, flags } = parseArgs(["node", "arbors", "add", "-c", "my-branch", "main"]);
+    expect(names).toEqual(["my-branch", "main"]);
+    expect(flags.create).toBe("true");
+  });
+
+  it("should handle -C flag for force create", () => {
+    const { names, flags } = parseArgs(["node", "arbors", "add", "-C", "my-branch", "main"]);
+    expect(names).toEqual(["my-branch", "main"]);
+    expect(flags.create).toBe("true");
+    expect(flags.forceCreate).toBe("true");
+  });
+
+  it("should map --plain to --porcelain with deprecation flag", () => {
+    const { flags } = parseArgs(["node", "arbors", "list", "--plain"]);
+    expect(flags.porcelain).toBe("true");
+    expect(flags._plainDeprecated).toBe("true");
+  });
+
+  it("should support --porcelain directly", () => {
+    const { flags } = parseArgs(["node", "arbors", "list", "--porcelain"]);
+    expect(flags.porcelain).toBe("true");
+    expect(flags._plainDeprecated).toBeUndefined();
   });
 
   it("should handle --force flag with multiple names", () => {
-    const { names, flags } = parseArgs(["node", "arbors", "remove", "-f", "feature/a", "feature/b"]);
+    const { names, flags } = parseArgs([
+      "node",
+      "arbors",
+      "remove",
+      "-f",
+      "feature/a",
+      "feature/b",
+    ]);
+    expect(names).toEqual(["feature/a", "feature/b"]);
+    expect(flags.force).toBe("true");
+  });
+
+  it("should handle global flags before command", () => {
+    const { command, flags } = parseArgs(["node", "arbors", "--version"]);
+    expect(command).toBeUndefined();
+    expect(flags.version).toBe("true");
+  });
+
+  it("should handle flags mixed with positional args", () => {
+    const { command, names, flags } = parseArgs([
+      "node",
+      "arbors",
+      "remove",
+      "feature/a",
+      "-f",
+      "feature/b",
+    ]);
+    expect(command).toBe("remove");
     expect(names).toEqual(["feature/a", "feature/b"]);
     expect(flags.force).toBe("true");
   });
