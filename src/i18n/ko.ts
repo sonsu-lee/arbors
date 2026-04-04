@@ -38,8 +38,18 @@ export const ko: Messages = {
   configSaved: "설정이 저장되었습니다.",
   configCurrent: "현재 설정:",
 
-  version: "arbors v0.1.0",
+  version: (v) => `arbors v${v}`,
   usage: "사용법: arbors [명령어] [옵션]",
   commands: "명령어:",
   options: "옵션:",
+
+  running: "워크트리에서 명령 실행 중...",
+  pruning: "오래된 워크트리 정리 중...",
+  noStaleWorktrees: "정리할 워크트리가 없습니다.",
+  noMergedWorktrees: "병합된 워크트리가 없습니다.",
+  hookFailed: (name) => `경고: ${name} 훅 실행 실패`,
+  notInWorktree: "워크트리 내부가 아닙니다.",
+  deprecatedPlain: "--plain은 더 이상 사용되지 않습니다. --porcelain을 사용하세요.",
+  prunedStale: (branch) => `오래된 항목 정리: ${branch}`,
+  wouldRemove: (branch, path) => `삭제 대상: ${branch} (${path})`,
 } as const;

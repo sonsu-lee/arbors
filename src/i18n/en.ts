@@ -29,10 +29,19 @@ export interface Messages {
   helpWorktree: string;
   configSaved: string;
   configCurrent: string;
-  version: string;
+  version: (v: string) => string;
   usage: string;
   commands: string;
   options: string;
+  running: string;
+  pruning: string;
+  noStaleWorktrees: string;
+  noMergedWorktrees: string;
+  hookFailed: (name: string) => string;
+  notInWorktree: string;
+  deprecatedPlain: string;
+  prunedStale: (branch: string) => string;
+  wouldRemove: (branch: string, path: string) => string;
 }
 
 export const en: Messages = {
@@ -66,8 +75,17 @@ export const en: Messages = {
   helpWorktree: "Ctrl+B: new branch | Ctrl+X: delete | Esc: back",
   configSaved: "Configuration saved.",
   configCurrent: "Current configuration:",
-  version: "arbors v0.1.0",
+  version: (v) => `arbors v${v}`,
   usage: "Usage: arbors [command] [options]",
   commands: "Commands:",
   options: "Options:",
+  running: "Running command in worktree...",
+  pruning: "Pruning stale worktrees...",
+  noStaleWorktrees: "No stale worktrees found.",
+  noMergedWorktrees: "No merged worktrees found.",
+  hookFailed: (name) => `warning: ${name} hook failed`,
+  notInWorktree: "Not inside a worktree.",
+  deprecatedPlain: "--plain is deprecated, use --porcelain instead",
+  prunedStale: (branch) => `Pruned stale entry: ${branch}`,
+  wouldRemove: (branch, path) => `would remove: ${branch} (${path})`,
 };

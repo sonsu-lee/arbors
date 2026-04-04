@@ -38,8 +38,18 @@ export const ja: Messages = {
   configSaved: "設定を保存しました。",
   configCurrent: "現在の設定:",
 
-  version: "arbors v0.1.0",
+  version: (v) => `arbors v${v}`,
   usage: "使い方: arbors [コマンド] [オプション]",
   commands: "コマンド:",
   options: "オプション:",
+
+  running: "ワークツリーでコマンドを実行中...",
+  pruning: "古いワークツリーを整理中...",
+  noStaleWorktrees: "整理するワークツリーがありません。",
+  noMergedWorktrees: "マージ済みのワークツリーがありません。",
+  hookFailed: (name) => `警告: ${name} フックの実行に失敗しました`,
+  notInWorktree: "ワークツリー内ではありません。",
+  deprecatedPlain: "--plainは廃止されました。--porcelainを使用してください。",
+  prunedStale: (branch) => `古いエントリを整理: ${branch}`,
+  wouldRemove: (branch, path) => `削除対象: ${branch} (${path})`,
 } as const;

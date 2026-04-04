@@ -1,5 +1,9 @@
 import { basename } from "node:path";
+import { createRequire } from "node:module";
 import chalk from "chalk";
+
+const pkg = createRequire(import.meta.url)("../package.json") as { version: string };
+const VERSION = pkg.version;
 import {
   type ArborConfig,
   loadConfig,
@@ -143,7 +147,7 @@ const hint = (message: string) => {
 };
 
 const printHelp = (msg: typeof import("../src/i18n/en.js").en) => {
-  console.log(chalk.cyan.bold(msg.version));
+  console.log(chalk.cyan.bold(msg.version(VERSION)));
   console.log();
   console.log(chalk.white(msg.usage));
   console.log();
@@ -213,11 +217,11 @@ const main = async () => {
   const adapter = await createAdapter(config.runtime);
 
   if (flags._plainDeprecated) {
-    console.error(chalk.yellow("warning: --plain is deprecated, use --porcelain instead"));
+    console.error(chalk.yellow(`warning: ${msg.deprecatedPlain}`));
   }
 
   if (flags.version) {
-    console.log(msg.version);
+    console.log(msg.version(VERSION));
     return;
   }
 
@@ -346,7 +350,7 @@ const main = async () => {
             config.hooks,
           );
           if (!hookOk && !flags.quiet) {
-            console.error(chalk.yellow("warning: postCreate hook failed"));
+            console.error(chalk.yellow(msg.hookFailed("postCreate")));
           }
         }
       } catch (setupErr) {
@@ -612,7 +616,7 @@ const main = async () => {
       try {
         currentPath = await getWorktreeRoot(adapter);
       } catch {
-        error("not inside a worktree");
+        error(msg.notInWorktree);
         process.exitCode = 1;
         return;
       }
@@ -669,13 +673,13 @@ const main = async () => {
         }
 
         if (mergedBranches.length === 0) {
-          if (!flags.quiet) console.log(chalk.gray("No merged worktrees found."));
+          if (!flags.quiet) console.log(chalk.gray(msg.noMergedWorktrees));
           break;
         }
 
         for (const { branch, path } of mergedBranches) {
           if (flags.dryRun) {
-            console.log(`would remove: ${branch} (${path})`);
+            console.log(msg.wouldRemove(branch, path));
           } else {
             try {
               await removeWorktree(adapter, path, branch);
@@ -690,16 +694,16 @@ const main = async () => {
         const staleEntries = dbEntries.filter((w) => !gitPaths.has(w.path));
 
         if (staleEntries.length === 0) {
-          if (!flags.quiet) console.log(chalk.gray("No stale worktrees found."));
+          if (!flags.quiet) console.log(chalk.gray(msg.noStaleWorktrees));
           break;
         }
 
         for (const entry of staleEntries) {
           if (flags.dryRun) {
-            console.log(`would remove: ${entry.branch} (${entry.path})`);
+            console.log(msg.wouldRemove(entry.branch, entry.path));
           } else {
             await unregisterWorktree(adapter, entry.path);
-            if (!flags.quiet) console.log(chalk.green(`✓ Pruned stale entry: ${entry.branch}`));
+            if (!flags.quiet) console.log(chalk.green(`✓ ${msg.prunedStale(entry.branch)}`));
           }
         }
       }
