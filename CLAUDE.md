@@ -10,24 +10,27 @@ Git worktree manager CLI. Create/switch/remove worktrees with auto dependency in
 
 ## Project Structure
 
-src/config.ts            Config loading (global -> project merge)
-src/git/worktree.ts      Core worktree operations
-src/git/safety.ts        Name validation, safety checks
-src/git/exclude.ts       Gitignored file copying via blocklist (excludeFromCopy)
-src/project/registry.ts  ~/.arbors/db.json CRUD
-src/project/setup.ts     Package manager & runtime detection
-src/runtime/             RuntimeAdapter interface + Node/Bun implementations
-src/i18n/                en, ko, ja message catalogs
-bin/arbors.ts            CLI entry point
-tests/                   vitest unit tests
+src/config.ts Config loading (global -> project merge) + env var overrides
+src/hooks.ts Lifecycle hook system (postCreate, preRemove, postRemove, postSwitch)
+src/index.ts Public API exports
+src/git/worktree.ts Core worktree operations
+src/git/safety.ts Name validation, safety checks
+src/git/exclude.ts Gitignored file copying via blocklist + .arborsinclude
+src/project/registry.ts ~/.arbors/db.json CRUD
+src/project/setup.ts Package manager & runtime detection
+src/runtime/ RuntimeAdapter interface + Node/Bun implementations (CoW copy)
+src/i18n/ en, ko, ja message catalogs
+src/tui/ React Ink TUI components (FuzzyList, selectors)
+bin/arbors.ts CLI entry point
+tests/ vitest unit tests
 
 ## Dev Commands
 
-pnpm test        vitest
-pnpm lint        oxlint
-pnpm format      oxfmt
-pnpm build       tsup
-pnpm typecheck   tsc --noEmit
+pnpm test vitest
+pnpm lint oxlint
+pnpm format oxfmt
+pnpm build tsup
+pnpm typecheck tsc --noEmit
 
 ## Commit Rules
 
@@ -42,7 +45,7 @@ Details: see skills/release/SKILL.md
 
 ## Code Style
 
-- Path alias: #/* -> ./src/*
+- Path alias: #/_ -> ./src/_
 - All file/process ops through RuntimeAdapter
 - ESM only (type: "module")
 - Strict TypeScript

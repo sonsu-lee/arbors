@@ -12,13 +12,14 @@ Conventional Commits. English only. Subject line is sufficient for most changes.
 type: concise summary
 
 Optional body (only when subject alone can't explain):
+
 - bullet points with -
 - one line per point
 
 ## Types
 
 | Type     | When                          | Release impact |
-|----------|-------------------------------|----------------|
+| -------- | ----------------------------- | -------------- |
 | feat     | New feature                   | minor bump     |
 | fix      | Bug fix                       | patch bump     |
 | docs     | Documentation only            | no release     |

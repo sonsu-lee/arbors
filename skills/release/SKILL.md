@@ -15,12 +15,12 @@ Automated via release-please v4 + GitHub Actions. No manual version bumping.
 
 ## Version Bump Rules
 
-| Commit type      | Version bump | Example        |
-|------------------|-------------|----------------|
-| fix:             | patch       | 0.1.1 -> 0.1.2 |
-| feat:            | minor       | 0.1.1 -> 0.2.0 |
-| BREAKING CHANGE  | major       | 0.1.1 -> 1.0.0 |
-| docs/chore/test  | no release  | --             |
+| Commit type     | Version bump | Example        |
+| --------------- | ------------ | -------------- |
+| fix:            | patch        | 0.1.1 -> 0.1.2 |
+| feat:           | minor        | 0.1.1 -> 0.2.0 |
+| BREAKING CHANGE | major        | 0.1.1 -> 1.0.0 |
+| docs/chore/test | no release   | --             |
 
 ## What NOT to Do
 
