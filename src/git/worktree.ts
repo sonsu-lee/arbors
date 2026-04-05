@@ -59,12 +59,18 @@ export const listWorktrees = async (adapter: RuntimeAdapter): Promise<WorktreeIn
     .filter((wt): wt is WorktreeInfo => wt !== null);
 };
 
-export const branchExists = async (adapter: RuntimeAdapter, branchName: string): Promise<boolean> => {
+export const branchExists = async (
+  adapter: RuntimeAdapter,
+  branchName: string,
+): Promise<boolean> => {
   const result = await adapter.exec("git", ["rev-parse", "--verify", branchName]);
   return result.exitCode === 0;
 };
 
-export const remoteBranchExists = async (adapter: RuntimeAdapter, branchName: string): Promise<boolean> => {
+export const remoteBranchExists = async (
+  adapter: RuntimeAdapter,
+  branchName: string,
+): Promise<boolean> => {
   const result = await adapter.exec("git", ["ls-remote", "--heads", "origin", branchName]);
   return result.exitCode === 0 && result.stdout.length > 0;
 };
